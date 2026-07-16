@@ -1,4 +1,5 @@
 import type { ChartModel, ChartBox } from "../model/chartModel";
+import { normalizeModel } from "../model/chartModel";
 import { TAG_ID, TAG_MODEL } from "./tags";
 
 /** Read every BLP chart on a slide by parsing the model stamped on anchor shapes. */
@@ -21,7 +22,7 @@ export async function getSlideCharts(
   for (const tag of probes) {
     if (tag.isNullObject) continue;
     try {
-      models.push(JSON.parse(tag.value) as ChartModel);
+      models.push(normalizeModel(JSON.parse(tag.value) as ChartModel));
     } catch {
       // Ignore shapes whose tag isn't valid JSON.
     }

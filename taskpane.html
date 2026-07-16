@@ -36,6 +36,7 @@
         <div class="row">
           <button id="addSeriesBtn" class="ghost">+ Series</button>
           <button id="addCatBtn" class="ghost">+ Category</button>
+          <button id="transposeBtn" class="ghost" title="Swap rows and columns">Transpose</button>
         </div>
         <details class="paste">
           <summary>Paste from Excel</summary>
@@ -43,6 +44,49 @@
             placeholder="Copy a range in Excel and paste here.&#10;Top row = category names, first column = series names."></textarea>
           <button id="pasteLoadBtn" class="ghost wide">Load pasted data</button>
         </details>
+      </section>
+
+      <section class="panel">
+        <label class="lbl">Chart style</label>
+        <div class="opts">
+          <label>Type
+            <select id="optOrientation">
+              <option value="column">Column</option>
+              <option value="bar">Bar (horizontal)</option>
+            </select>
+          </label>
+          <label>Arrangement
+            <select id="optGrouping">
+              <option value="stacked">Stacked</option>
+              <option value="clustered">Clustered</option>
+              <option value="stacked100">100% stacked</option>
+            </select>
+          </label>
+          <label>Gap %
+            <input id="optGap" type="number" min="0" max="90" step="5" value="35" />
+          </label>
+          <label class="chk"><input id="optTotals" type="checkbox" checked /> Totals</label>
+          <label class="chk"><input id="optLabels" type="checkbox" checked /> Value labels</label>
+          <label class="chk"><input id="optReverse" type="checkbox" /> Reverse order</label>
+        </div>
+
+        <label class="lbl mt">Number format</label>
+        <div class="opts">
+          <label>Decimals
+            <input id="nfDecimals" type="number" min="0" max="3" step="1" value="0" />
+          </label>
+          <label>Scale
+            <select id="nfScale">
+              <option value="none">None</option>
+              <option value="k">Thousands (k)</option>
+              <option value="M">Millions (M)</option>
+            </select>
+          </label>
+          <label>Prefix <input id="nfPrefix" type="text" placeholder="$" /></label>
+          <label>Suffix <input id="nfSuffix" type="text" placeholder="kg" /></label>
+          <label class="chk"><input id="nfHideZero" type="checkbox" checked /> Hide zeros</label>
+        </div>
+        <p class="hint">Style changes apply when you Insert or Update.</p>
       </section>
 
       <section class="panel actions">

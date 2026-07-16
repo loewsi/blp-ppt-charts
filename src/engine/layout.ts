@@ -1,16 +1,16 @@
 import type { ChartModel, ChartType } from "../model/chartModel";
 import type { Primitive } from "./primitives";
-import { layoutStackedColumn } from "./layoutStackedColumn";
+import { layoutBarColumn } from "./layoutBarColumn";
 
 type LayoutFn = (model: ChartModel) => Primitive[];
 
-// Register future chart types here (e.g. waterfall) - nothing else changes.
+// Register future chart families here (e.g. waterfall) - nothing else changes.
 const REGISTRY: Record<ChartType, LayoutFn> = {
-  stackedColumn: layoutStackedColumn,
+  barColumn: layoutBarColumn,
 };
 
 export function computeLayout(model: ChartModel): Primitive[] {
-  const fn = REGISTRY[model.data.type];
-  if (!fn) throw new Error(`No layout registered for chart type "${model.data.type}"`);
+  // Fall back to the bar/column engine for older models (e.g. "stackedColumn").
+  const fn = REGISTRY[model.data.type] ?? layoutBarColumn;
   return fn(model);
 }

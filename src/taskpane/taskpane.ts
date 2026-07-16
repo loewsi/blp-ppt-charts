@@ -1,5 +1,13 @@
-import type { ChartData, ChartModel, ChartBox, Series } from "../model/chartModel";
-import { DEFAULT_BOX, PALETTE, defaultData } from "../model/chartModel";
+import type {
+  ChartData,
+  ChartModel,
+  ChartBox,
+  Series,
+  ChartOptions,
+  Orientation,
+  Grouping,
+} from "../model/chartModel";
+import { DEFAULT_BOX, PALETTE, defaultData, defaultOptions } from "../model/chartModel";
 import { drawChart } from "../engine/render";
 import {
   deleteChart,
@@ -25,6 +33,7 @@ Office.onReady((info) => {
   }
   show("app");
   wire();
+  setOptionsUI(defaultOptions());
   renderGrid();
   setMode();
 
@@ -67,6 +76,7 @@ function wire(): void {
   byId("loadBtn").addEventListener("click", () => guard(loadSelected));
   byId("addSeriesBtn").addEventListener("click", () => addSeries());
   byId("addCatBtn").addEventListener("click", () => addCategory());
+  byId("transposeBtn").addEventListener("click", () => transpose());
   byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
 }
 
@@ -81,7 +91,12 @@ function renderGrid(): void {
   currentData.categories.forEach((cat, ci) => {
     const cell = document.createElement("th");
     cell.appendChild(input("cat", cat, "text"));
-    cell.appendChild(removeBtn(() => removeCategory(ci), "Remove category"));
+    const catCtl = document.createElement("div");
+    catCtl.className = "series-head";
+    catCtl.appendChild(miniBtn("◀", "Move left", () => moveCategory(ci, -1)));
+    catCtl.appendChild(miniBtn("▶", "Move right", () => moveCategory(ci, 1)));
+    catCtl.appendChild(removeBtn(() => removeCategory(ci), "Remove category"));
+    cell.appendChild(catCtl);
     hr.appendChild(cell);
   });
   hr.appendChild(th(""));
@@ -109,6 +124,8 @@ function renderGrid(): void {
     });
 
     const rm = document.createElement("td");
+    rm.appendChild(miniBtn("▲", "Move up", () => moveSeries(si, -1)));
+    rm.appendChild(miniBtn("▼", "Move down", () => moveSeries(si, 1)));
     rm.appendChild(removeBtn(() => removeSeries(si), "Remove series"));
     tr.appendChild(rm);
     tbody.appendChild(tr);
@@ -135,7 +152,7 @@ function readGrid(): ChartData {
     }
   );
 
-  return { type: "stackedColumn", categories, series };
+  return { type: "barColumn", categories, series };
 }
 
 // ---- structural edits ----------------------------------------------------
@@ -169,6 +186,40 @@ function removeCategory(index: number): void {
   if (currentData.categories.length <= 1) return;
   currentData.categories.splice(index, 1);
   currentData.series.forEach((s) => s.values.splice(index, 1));
+  renderGrid();
+}
+
+function moveSeries(i: number, dir: number): void {
+  currentData = readGrid();
+  const j = i + dir;
+  if (j < 0 || j >= currentData.series.length) return;
+  [currentData.series[i], currentData.series[j]] = [currentData.series[j], currentData.series[i]];
+  renderGrid();
+}
+
+function moveCategory(i: number, dir: number): void {
+  currentData = readGrid();
+  const j = i + dir;
+  if (j < 0 || j >= currentData.categories.length) return;
+  [currentData.categories[i], currentData.categories[j]] = [
+    currentData.categories[j],
+    currentData.categories[i],
+  ];
+  currentData.series.forEach((s) => {
+    [s.values[i], s.values[j]] = [s.values[j], s.values[i]];
+  });
+  renderGrid();
+}
+
+function transpose(): void {
+  const d = readGrid();
+  const newCategories = d.series.map((s) => s.name);
+  const newSeries: Series[] = d.categories.map((cat, ci) => ({
+    name: cat,
+    color: PALETTE[ci % PALETTE.length],
+    values: d.series.map((s) => s.values[ci] ?? 0),
+  }));
+  currentData = { type: "barColumn", categories: newCategories, series: newSeries };
   renderGrid();
 }
 
@@ -207,7 +258,7 @@ function parsePasted(text: string): ChartData | null {
       return isFinite(n) ? n : 0;
     }),
   }));
-  return { type: "stackedColumn", categories, series };
+  return { type: "barColumn", categories, series };
 }
 
 // ---- PowerPoint operations ----------------------------------------------
@@ -220,7 +271,7 @@ async function insertChart(): Promise<void> {
     await withSlide(async (context, slide) => {
       const existing = await getSlideCharts(context, slide);
       const name = `Chart ${existing.length + 1}`;
-      const model: ChartModel = { id: newId(), version: 1, name, data, box };
+      const model: ChartModel = { id: newId(), version: 1, name, data, box, options: readOptions() };
       await drawChart(context, slide, model);
       currentId = model.id;
       currentName = name;
@@ -251,6 +302,7 @@ async function updateChart(): Promise<void> {
         name: currentName || "Chart",
         data,
         box,
+        options: readOptions(),
       };
       await drawChart(context, slide, model);
       currentBox = box;
@@ -312,6 +364,7 @@ function resetToNew(): void {
   currentBox = { ...DEFAULT_BOX };
   currentId = null;
   currentName = "";
+  setOptionsUI(defaultOptions());
   renderGrid();
   setMode();
   status("New chart. Edit values, then Insert.");
@@ -323,6 +376,7 @@ function applyModel(model: ChartModel): void {
   currentBox = model.box;
   currentId = model.id;
   currentName = model.name || "chart";
+  setOptionsUI(model.options);
   renderGrid();
   setMode();
 }
@@ -414,4 +468,54 @@ function removeBtn(onClick: () => void, title = "Remove"): HTMLButtonElement {
   b.textContent = "×";
   b.addEventListener("click", onClick);
   return b;
+}
+
+function miniBtn(label: string, title: string, onClick: () => void): HTMLButtonElement {
+  const b = document.createElement("button");
+  b.className = "mini";
+  b.title = title;
+  b.textContent = label;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+// ---- chart-style options <-> UI -----------------------------------------
+function readOptions(): ChartOptions {
+  const v = (id: string) => (byId(id) as HTMLInputElement | HTMLSelectElement).value;
+  const c = (id: string) => (byId(id) as HTMLInputElement).checked;
+  const gapPct = Number(v("optGap"));
+  return {
+    orientation: v("optOrientation") as Orientation,
+    grouping: v("optGrouping") as Grouping,
+    gap: Math.min(0.9, Math.max(0, (isFinite(gapPct) ? gapPct : 35) / 100)),
+    showTotals: c("optTotals"),
+    showValueLabels: c("optLabels"),
+    reverseCategories: c("optReverse"),
+    numberFormat: {
+      decimals: clampInt(Number(v("nfDecimals")), 0, 3),
+      scale: v("nfScale") as "none" | "k" | "M",
+      prefix: v("nfPrefix"),
+      suffix: v("nfSuffix"),
+      hideZero: c("nfHideZero"),
+    },
+  };
+}
+
+function setOptionsUI(o: ChartOptions): void {
+  (byId("optOrientation") as HTMLSelectElement).value = o.orientation;
+  (byId("optGrouping") as HTMLSelectElement).value = o.grouping;
+  (byId("optGap") as HTMLInputElement).value = String(Math.round(o.gap * 100));
+  (byId("optTotals") as HTMLInputElement).checked = o.showTotals;
+  (byId("optLabels") as HTMLInputElement).checked = o.showValueLabels;
+  (byId("optReverse") as HTMLInputElement).checked = o.reverseCategories;
+  (byId("nfDecimals") as HTMLInputElement).value = String(o.numberFormat.decimals);
+  (byId("nfScale") as HTMLSelectElement).value = o.numberFormat.scale;
+  (byId("nfPrefix") as HTMLInputElement).value = o.numberFormat.prefix;
+  (byId("nfSuffix") as HTMLInputElement).value = o.numberFormat.suffix;
+  (byId("nfHideZero") as HTMLInputElement).checked = o.numberFormat.hideZero;
+}
+
+function clampInt(n: number, lo: number, hi: number): number {
+  if (!isFinite(n)) return lo;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
 }
