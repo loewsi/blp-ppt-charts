@@ -75,6 +75,20 @@ input[type="color"] { padding: 0; height: 26px; width: 30px; cursor: pointer; }
   font-size: 15px; line-height: 1; padding: 2px 6px;
 }
 
+.editing {
+  margin: 0 0 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f0f4fb;
+  color: #5a6a85;
+  border: 1px solid var(--line);
+}
+.editing.on { background: var(--blp-pale); color: var(--blp-dark); }
+
+button.wide { width: 100%; }
+
 .status { min-height: 16px; font-size: 12px; color: var(--blp-dark); }
 .status.err { color: #b00020; }
 

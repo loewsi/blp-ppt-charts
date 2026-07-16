@@ -12,22 +12,34 @@ export async function drawChart(
 ): Promise<void> {
   const prims = computeLayout(model);
   const shapes = slide.shapes;
-  const created: PowerPoint.Shape[] = [];
+  const created = prims.map((p) => makeShape(shapes, p));
+  await context.sync(); // shapes must exist before they can be grouped
 
-  for (const p of prims) {
-    created.push(makeShape(shapes, p));
+  const canGroup =
+    created.length > 1 &&
+    Office.context.requirements.isSetSupported("PowerPointApi", "1.8");
+
+  if (canGroup) {
+    // One selectable/movable object; tag the group with the model.
+    const group = shapes.addGroup(created);
+    tagChart(group, model);
+  } else {
+    // Fallback for hosts without grouping (PowerPointApi < 1.8): tag each shape.
+    created.forEach((shape, i) => {
+      shape.tags.add(TAG_ID, model.id);
+      if (i === 0) {
+        shape.tags.add(TAG_ANCHOR, "1");
+        shape.tags.add(TAG_MODEL, JSON.stringify(model));
+      }
+    });
   }
-
-  // Tag every shape with the chart id; stamp the model onto the first one.
-  created.forEach((shape, i) => {
-    shape.tags.add(TAG_ID, model.id);
-    if (i === 0) {
-      shape.tags.add(TAG_ANCHOR, "1");
-      shape.tags.add(TAG_MODEL, JSON.stringify(model));
-    }
-  });
-
   await context.sync();
+}
+
+function tagChart(shape: PowerPoint.Shape, model: ChartModel): void {
+  shape.tags.add(TAG_ID, model.id);
+  shape.tags.add(TAG_ANCHOR, "1");
+  shape.tags.add(TAG_MODEL, JSON.stringify(model));
 }
 
 function makeShape(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint.Shape {

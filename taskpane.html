@@ -15,8 +15,13 @@
     </header>
 
     <main id="app" hidden>
+      <p id="editing" class="editing">New chart — not inserted yet</p>
+
       <section class="panel">
-        <label class="lbl" for="chartSelect">Charts on this slide</label>
+        <label class="lbl" for="chartSelect">Edit an existing chart</label>
+        <div class="row">
+          <button id="editSelectedBtn" class="ghost wide">Edit selected chart</button>
+        </div>
         <div class="row">
           <select id="chartSelect"><option value="">(none loaded)</option></select>
           <button id="refreshBtn" class="ghost" title="Rescan the current slide">&#x21bb;</button>

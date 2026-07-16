@@ -1,13 +1,14 @@
 import type { ChartData, ChartModel, ChartBox, Series } from "../model/chartModel";
 import { DEFAULT_BOX, PALETTE, defaultData } from "../model/chartModel";
 import { drawChart } from "../engine/render";
-import { deleteChart, getSlideCharts } from "../engine/persistence";
+import { deleteChart, getSlideCharts, getSelectedChartId } from "../engine/persistence";
 import { newId } from "../util/id";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
 let currentBox: ChartBox = { ...DEFAULT_BOX };
 let currentId: string | null = null; // null => "insert new" mode
+let currentName = "";
 let cachedModels: ChartModel[] = [];
 
 // ---- boot ----------------------------------------------------------------
@@ -30,6 +31,7 @@ function wire(): void {
   byId("insertBtn").addEventListener("click", () => guard(insertChart));
   byId("updateBtn").addEventListener("click", () => guard(updateChart));
   byId("newBtn").addEventListener("click", () => resetToNew());
+  byId("editSelectedBtn").addEventListener("click", () => guard(editSelected));
   byId("refreshBtn").addEventListener("click", () => guard(refreshList));
   byId("loadBtn").addEventListener("click", () => guard(loadSelected));
   byId("addSeriesBtn").addEventListener("click", () => addSeries());
@@ -41,21 +43,18 @@ function renderGrid(): void {
   const table = byId("grid");
   table.innerHTML = "";
 
-  // Header: "Series" + one column per category + remove column.
   const thead = document.createElement("thead");
   const hr = document.createElement("tr");
   hr.appendChild(th("Series"));
-  currentData.categories.forEach((cat, ci) => {
+  currentData.categories.forEach((cat) => {
     const cell = document.createElement("th");
     cell.appendChild(input("cat", cat, "text"));
     hr.appendChild(cell);
-    cell.querySelector("input")!.dataset.ci = String(ci);
   });
   hr.appendChild(th(""));
   thead.appendChild(hr);
   table.appendChild(thead);
 
-  // Body: one row per series.
   const tbody = document.createElement("tbody");
   currentData.series.forEach((s, si) => {
     const tr = document.createElement("tr");
@@ -138,14 +137,17 @@ async function insertChart(): Promise<void> {
   if (!validate(data)) return;
   const box: ChartBox = { ...DEFAULT_BOX };
   await withSlide(async (context, slide) => {
-    const model: ChartModel = { id: newId(), version: 1, data, box };
+    const existing = await getSlideCharts(context, slide);
+    const name = `Chart ${existing.length + 1}`;
+    const model: ChartModel = { id: newId(), version: 1, name, data, box };
     await drawChart(context, slide, model);
     currentId = model.id;
+    currentName = name;
   });
   currentData = data;
   currentBox = box;
   setMode();
-  status("Chart inserted.");
+  status(`Inserted ${currentName}.`);
 }
 
 async function updateChart(): Promise<void> {
@@ -154,11 +156,36 @@ async function updateChart(): Promise<void> {
   if (!validate(data)) return;
   await withSlide(async (context, slide) => {
     await deleteChart(context, slide, currentId!);
-    const model: ChartModel = { id: currentId!, version: 1, data, box: currentBox };
+    const model: ChartModel = {
+      id: currentId!,
+      version: 1,
+      name: currentName || "Chart",
+      data,
+      box: currentBox,
+    };
     await drawChart(context, slide, model);
   });
   currentData = data;
-  status("Chart updated.");
+  status(`Updated ${currentName || "chart"}.`);
+}
+
+/** Load whatever chart is currently selected on the slide. */
+async function editSelected(): Promise<void> {
+  await withSlide(async (context, slide) => {
+    const id = await getSelectedChartId(context);
+    if (!id) {
+      status("Click a chart on the slide first, then press this.", true);
+      return;
+    }
+    const models = await getSlideCharts(context, slide);
+    const model = models.find((m) => m.id === id);
+    if (!model) {
+      status("That selection isn't a SlideChart.", true);
+      return;
+    }
+    applyModel(model);
+    status(`Editing ${model.name || "chart"} (selected on slide).`);
+  });
 }
 
 async function refreshList(): Promise<void> {
@@ -168,8 +195,8 @@ async function refreshList(): Promise<void> {
   if (cachedModels.length === 0) {
     sel.appendChild(new Option("(no charts on this slide)", ""));
   } else {
-    cachedModels.forEach((m, i) => {
-      const label = `Chart ${i + 1}: ${m.data.series.map((s) => s.name).join(", ")}`;
+    cachedModels.forEach((m) => {
+      const label = `${m.name || "Chart"} — ${m.data.series.map((s) => s.name).join(", ")}`;
       sel.appendChild(new Option(label, m.id));
     });
   }
@@ -178,27 +205,33 @@ async function refreshList(): Promise<void> {
 
 function loadSelected(): void {
   const sel = byId("chartSelect") as HTMLSelectElement;
-  const id = sel.value;
-  const model = cachedModels.find((m) => m.id === id);
+  const model = cachedModels.find((m) => m.id === sel.value);
   if (!model) {
-    status("Select a chart first (press ↻ to rescan).", true);
+    status("Pick a chart from the list first (press ↻ to rescan).", true);
     return;
   }
-  currentData = model.data;
-  currentBox = model.box;
-  currentId = model.id;
-  renderGrid();
-  setMode();
-  status("Chart loaded. Edit values, then Update.");
+  applyModel(model);
+  status(`Editing ${model.name || "chart"}.`);
 }
 
 function resetToNew(): void {
   currentData = defaultData();
   currentBox = { ...DEFAULT_BOX };
   currentId = null;
+  currentName = "";
   renderGrid();
   setMode();
   status("New chart. Edit values, then Insert.");
+}
+
+/** Point the editor at an existing chart model. */
+function applyModel(model: ChartModel): void {
+  currentData = model.data;
+  currentBox = model.box;
+  currentId = model.id;
+  currentName = model.name || "chart";
+  renderGrid();
+  setMode();
 }
 
 /** Run a callback against the selected slide (falls back to the first slide). */
@@ -235,6 +268,14 @@ function validate(data: ChartData): boolean {
 
 function setMode(): void {
   (byId("updateBtn") as HTMLButtonElement).disabled = currentId === null;
+  const badge = byId("editing");
+  if (currentId) {
+    badge.textContent = `Editing: ${currentName || "chart"}`;
+    badge.className = "editing on";
+  } else {
+    badge.textContent = "New chart — not inserted yet";
+    badge.className = "editing";
+  }
 }
 
 async function guard(fn: () => Promise<void> | void): Promise<void> {

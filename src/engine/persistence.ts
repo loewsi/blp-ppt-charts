@@ -29,6 +29,27 @@ export async function getSlideCharts(
   return models;
 }
 
+/** Read the chart id of whatever is selected on the slide (group or shape), or null. */
+export async function getSelectedChartId(
+  context: PowerPoint.RequestContext
+): Promise<string | null> {
+  const sel = context.presentation.getSelectedShapes();
+  sel.load("items");
+  await context.sync();
+
+  const probes = sel.items.map((s) => {
+    const tag = s.tags.getItemOrNullObject(TAG_ID);
+    tag.load("value, isNullObject");
+    return tag;
+  });
+  await context.sync();
+
+  for (const tag of probes) {
+    if (!tag.isNullObject) return tag.value;
+  }
+  return null;
+}
+
 /** Delete all shapes belonging to a chart id. Returns how many were removed. */
 export async function deleteChart(
   context: PowerPoint.RequestContext,

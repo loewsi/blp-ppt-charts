@@ -27,11 +27,13 @@ export interface ChartBox {
 export interface ChartModel {
   id: string;
   version: 1;
+  name: string;
   data: ChartData;
   box: ChartBox;
 }
 
-export const DEFAULT_BOX: ChartBox = { left: 180, top: 120, width: 600, height: 320 };
+// Modest default size on a 960x540 (16:9) slide — user can resize/move the group.
+export const DEFAULT_BOX: ChartBox = { left: 120, top: 150, width: 380, height: 230 };
 
 /** BLP brand palette, cycled across series. */
 export const PALETTE = ["#2E75FF", "#001C54", "#9CC0FF", "#5A93FF", "#C7DEFF", "#3F5B8C"];
