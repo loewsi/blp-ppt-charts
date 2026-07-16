@@ -10,7 +10,7 @@
   <Version>0.1.0.0</Version>
   <ProviderName>BLP Digital AG</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="BLP Charts" />
+  <DisplayName DefaultValue="SlideChart" />
   <Description DefaultValue="Live-linked charts for PowerPoint (Windows + Mac). v1: stacked column." />
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png" />
@@ -78,11 +78,11 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html" />
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="BLP.GroupLabel" DefaultValue="BLP Charts" />
+        <bt:String id="BLP.GroupLabel" DefaultValue="SlideChart" />
         <bt:String id="BLP.OpenLabel" DefaultValue="Chart editor" />
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="BLP.OpenTip" DefaultValue="Open the BLP live-linked chart editor." />
+        <bt:String id="BLP.OpenTip" DefaultValue="Open the SlideChart editor." />
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

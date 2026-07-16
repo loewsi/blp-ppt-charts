@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "BLP Digital - live-linked chart add-in for PowerPoint (Windows + Mac). v1: stacked column.",
+  "description": "SlideChart - live-linked chart add-in for PowerPoint (Windows + Mac). v1: stacked column.",
   "scripts": {
     "certs": "office-addin-dev-certs install",
     "gen-icons": "node scripts/gen-icons.mjs",

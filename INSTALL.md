@@ -1,4 +1,4 @@
-# Installing BLP Charts
+# Installing SlideChart
 
 There are two very different situations:
 
@@ -17,7 +17,7 @@ testing or a handful of technical users.
 ## A. End user — from the store (once published)
 
 1. In PowerPoint: **Insert** tab → **Add-ins** → **Store** (or **Get Add-ins**).
-2. Search **"BLP Charts"**.
+2. Search **"SlideChart"**.
 3. Click **Add**. Done — no admin, no files, works on Windows/Mac/web.
 
 ---
@@ -28,7 +28,7 @@ testing or a handful of technical users.
 2. **Insert** tab → **Add-ins**.
 3. In the dialog, click **Upload My Add-in** (top-right).
 4. **Browse** → choose the `manifest.xml` file → **Upload**.
-5. The **BLP Charts** button appears on the **Home** tab.
+5. The **SlideChart** button appears on the **Home** tab.
 
 ---
 
@@ -53,8 +53,8 @@ registered as a trusted catalog.
 
 **Step 3 — Insert it**
 1. **Insert** tab → **Add-ins** (or **My Add-ins** → **See All**).
-2. Open the **SHARED FOLDER** tab → select **BLP Charts** → **Add**.
-3. The **BLP Charts** button appears on the **Home** tab.
+2. Open the **SHARED FOLDER** tab → select **SlideChart** → **Add**.
+3. The **SlideChart** button appears on the **Home** tab.
 
 ---
 
@@ -64,7 +64,7 @@ registered as a trusted catalog.
    `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef`
    (create the `wef` folder if it doesn't exist).
 2. Copy `manifest.xml` into it.
-3. Restart PowerPoint → **Insert** → **Add-ins** → **My Add-ins** → **BLP Charts**.
+3. Restart PowerPoint → **Insert** → **Add-ins** → **My Add-ins** → **SlideChart**.
 
 ---
 

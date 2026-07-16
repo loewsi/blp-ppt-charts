@@ -1,4 +1,4 @@
-# BLP Charts — handoff / context for Claude
+# SlideChart — handoff / context for Claude
 
 **What this is:** a cross-platform (Windows + Mac + web) PowerPoint add-in that inserts
 **live-linked charts** — think-cell-style. Built on **Office.js + TypeScript + Vite**.

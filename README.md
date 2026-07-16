@@ -1,4 +1,4 @@
-# BLP Charts — PowerPoint add-in
+# SlideChart — PowerPoint add-in
 
 Live-linked charts for PowerPoint, **cross-platform (Windows + Mac + web)**, built on
 Office.js. This is a separate project from the VBA **QuickTools** add-in (which is
@@ -15,7 +15,7 @@ npm run dev        # serves https://localhost:3000
 ```
 
 Leave `npm run dev` running, then sideload `manifest.xml` (below). Open PowerPoint →
-**Home** tab → **BLP Charts** group → **Chart editor** to open the task pane.
+**Home** tab → **SlideChart** group → **Chart editor** to open the task pane.
 
 Other scripts: `npm run build` (type-check + production bundle to `dist/`),
 `npm run validate` (validate the manifest).
@@ -29,13 +29,13 @@ the same machine you test from.
 1. Put `manifest.xml` in a folder you share (right-click → Properties → Sharing).
 2. PowerPoint → File → Options → Trust Center → Trust Center Settings → **Trusted Add-in
    Catalogs** → paste the `\\PC\Share` URL → Add → tick **Show in Menu** → OK → restart PowerPoint.
-3. Insert → **My Add-ins** → **Shared Folder** → **BLP Charts**.
+3. Insert → **My Add-ins** → **Shared Folder** → **SlideChart**.
 
 **Mac — wef folder**
 1. Copy `manifest.xml` to
    `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/`
    (create `wef` if missing).
-2. Restart PowerPoint → Insert → **My Add-ins** → **BLP Charts**.
+2. Restart PowerPoint → Insert → **My Add-ins** → **SlideChart**.
 
 ## Deployment — GitHub Pages (public, free)
 
