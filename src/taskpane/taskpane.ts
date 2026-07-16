@@ -1,7 +1,12 @@
 import type { ChartData, ChartModel, ChartBox, Series } from "../model/chartModel";
 import { DEFAULT_BOX, PALETTE, defaultData } from "../model/chartModel";
 import { drawChart } from "../engine/render";
-import { deleteChart, getSlideCharts, getSelectedChartId } from "../engine/persistence";
+import {
+  deleteChart,
+  getSlideCharts,
+  getSelectedChartId,
+  getChartBox,
+} from "../engine/persistence";
 import { newId } from "../util/id";
 
 // ---- state ---------------------------------------------------------------
@@ -10,6 +15,7 @@ let currentBox: ChartBox = { ...DEFAULT_BOX };
 let currentId: string | null = null; // null => "insert new" mode
 let currentName = "";
 let cachedModels: ChartModel[] = [];
+let busy = false; // guards against the selection handler firing during our own edits
 
 // ---- boot ----------------------------------------------------------------
 Office.onReady((info) => {
@@ -21,7 +27,32 @@ Office.onReady((info) => {
   wire();
   renderGrid();
   setMode();
+
+  // Auto-load whichever chart the user selects on the slide.
+  Office.context.document.addHandlerAsync(
+    Office.EventType.DocumentSelectionChanged,
+    onSelectionChanged
+  );
 });
+
+/** Fires when the slide selection changes — pull the selected chart into the editor. */
+async function onSelectionChanged(): Promise<void> {
+  if (busy) return;
+  try {
+    await withSlide(async (context, slide) => {
+      const id = await getSelectedChartId(context);
+      if (!id || id === currentId) return;
+      const models = await getSlideCharts(context, slide);
+      const model = models.find((m) => m.id === id);
+      if (model) {
+        applyModel(model);
+        status(`Editing ${model.name || "chart"} (selected on slide).`);
+      }
+    });
+  } catch {
+    // Ignore transient selection-read errors.
+  }
+}
 
 function show(which: "app" | "unsupported"): void {
   byId(which).hidden = false;
@@ -136,14 +167,19 @@ async function insertChart(): Promise<void> {
   const data = readGrid();
   if (!validate(data)) return;
   const box: ChartBox = { ...DEFAULT_BOX };
-  await withSlide(async (context, slide) => {
-    const existing = await getSlideCharts(context, slide);
-    const name = `Chart ${existing.length + 1}`;
-    const model: ChartModel = { id: newId(), version: 1, name, data, box };
-    await drawChart(context, slide, model);
-    currentId = model.id;
-    currentName = name;
-  });
+  busy = true;
+  try {
+    await withSlide(async (context, slide) => {
+      const existing = await getSlideCharts(context, slide);
+      const name = `Chart ${existing.length + 1}`;
+      const model: ChartModel = { id: newId(), version: 1, name, data, box };
+      await drawChart(context, slide, model);
+      currentId = model.id;
+      currentName = name;
+    });
+  } finally {
+    busy = false;
+  }
   currentData = data;
   currentBox = box;
   setMode();
@@ -154,17 +190,26 @@ async function updateChart(): Promise<void> {
   if (!currentId) return;
   const data = readGrid();
   if (!validate(data)) return;
-  await withSlide(async (context, slide) => {
-    await deleteChart(context, slide, currentId!);
-    const model: ChartModel = {
-      id: currentId!,
-      version: 1,
-      name: currentName || "Chart",
-      data,
-      box: currentBox,
-    };
-    await drawChart(context, slide, model);
-  });
+  busy = true;
+  try {
+    await withSlide(async (context, slide) => {
+      // Redraw where the chart currently sits (respects moves/resizes).
+      const liveBox = await getChartBox(context, slide, currentId!);
+      const box = liveBox ?? currentBox;
+      await deleteChart(context, slide, currentId!);
+      const model: ChartModel = {
+        id: currentId!,
+        version: 1,
+        name: currentName || "Chart",
+        data,
+        box,
+      };
+      await drawChart(context, slide, model);
+      currentBox = box;
+    });
+  } finally {
+    busy = false;
+  }
   currentData = data;
   status(`Updated ${currentName || "chart"}.`);
 }
