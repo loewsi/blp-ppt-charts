@@ -36,7 +36,7 @@ labels — reuses the same primitives), register it in `layout.ts`. **`render.ts
 - `addLine(ConnectorType.straight, {left,top,width,height})` and
   `addGeometricShape`/`addTextBox` signatures assume current PowerPointApi — confirm on Mac.
 - Icons in `public/assets/` are solid-blue placeholders (`npm run gen-icons`) — swap for real BLP icons.
-- **OneDrive + `node_modules`**: this lives under OneDrive; exclude `node_modules` from sync.
+- **Location**: `C:\Users\silva\dev\blp-ppt-charts` — moved out of OneDrive (git + OneDrive risks corruption). GitHub is the backup.
 
 ## Next steps
 1. Runtime-verify insert/update/load in PowerPoint (Windows first, then Mac).
