@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BLP Charts</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <link rel="stylesheet" href="/src/taskpane/taskpane.css" />
+  </head>
+  <body>
+    <header class="hdr">
+      <h1>BLP Charts</h1>
+      <span class="sub">Stacked column &middot; live-linked</span>
+    </header>
+
+    <main id="app" hidden>
+      <section class="panel">
+        <label class="lbl" for="chartSelect">Charts on this slide</label>
+        <div class="row">
+          <select id="chartSelect"><option value="">(none loaded)</option></select>
+          <button id="refreshBtn" class="ghost" title="Rescan the current slide">&#x21bb;</button>
+          <button id="loadBtn" class="ghost">Load</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="grid-scroll">
+          <table id="grid"></table>
+        </div>
+        <div class="row">
+          <button id="addSeriesBtn" class="ghost">+ Series</button>
+          <button id="addCatBtn" class="ghost">+ Category</button>
+        </div>
+      </section>
+
+      <section class="panel actions">
+        <button id="insertBtn" class="primary">Insert new chart</button>
+        <button id="updateBtn" class="primary" disabled>Update this chart</button>
+        <button id="newBtn" class="ghost">New</button>
+      </section>
+
+      <p id="status" class="status"></p>
+    </main>
+
+    <div id="unsupported" class="unsupported" hidden>
+      This add-in must be opened inside PowerPoint.
+    </div>
+
+    <script type="module" src="/src/taskpane/taskpane.ts"></script>
+  </body>
+</html>

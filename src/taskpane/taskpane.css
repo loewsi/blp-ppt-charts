@@ -1,0 +1,81 @@
+:root {
+  --blp-dark: #001c54;
+  --blp-blue: #2e75ff;
+  --blp-pale: #e0f0ff;
+  --ink: #1a1a2e;
+  --line: #d7e2f4;
+  --bg: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Roboto", "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 13px;
+}
+
+.hdr {
+  background: var(--blp-dark);
+  color: #fff;
+  padding: 12px 14px;
+}
+.hdr h1 { margin: 0; font-size: 16px; font-weight: 600; }
+.hdr .sub { font-size: 11px; color: var(--blp-pale); }
+
+main { padding: 12px 14px 24px; }
+
+.panel { margin-bottom: 16px; }
+.lbl { display: block; font-weight: 600; margin-bottom: 6px; color: var(--blp-dark); }
+
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.row select { flex: 1; min-width: 0; }
+
+button {
+  font-family: inherit;
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+button.primary { background: var(--blp-blue); color: #fff; border-color: var(--blp-blue); font-weight: 600; }
+button.primary:disabled { background: #a9c4ff; border-color: #a9c4ff; cursor: not-allowed; }
+button.ghost { background: #fff; color: var(--blp-dark); }
+button.ghost:hover { background: var(--blp-pale); }
+
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions .primary { flex: 1; }
+
+.grid-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 3px; border-bottom: 1px solid var(--line); text-align: center; }
+thead th { background: var(--blp-pale); color: var(--blp-dark); font-weight: 600; }
+
+input {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px;
+  width: 100%;
+}
+input.cat { min-width: 64px; }
+input.val { min-width: 52px; text-align: right; }
+input.sname { min-width: 90px; }
+input[type="color"] { padding: 0; height: 26px; width: 30px; cursor: pointer; }
+
+.series-head { display: flex; gap: 4px; align-items: center; }
+
+.rm {
+  border: none; background: transparent; color: #b00020;
+  font-size: 15px; line-height: 1; padding: 2px 6px;
+}
+
+.status { min-height: 16px; font-size: 12px; color: var(--blp-dark); }
+.status.err { color: #b00020; }
+
+.unsupported { padding: 24px; color: #b00020; }

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+manifest.prod.xml
+*.log
+.DS_Store
