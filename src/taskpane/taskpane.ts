@@ -67,6 +67,7 @@ function wire(): void {
   byId("loadBtn").addEventListener("click", () => guard(loadSelected));
   byId("addSeriesBtn").addEventListener("click", () => addSeries());
   byId("addCatBtn").addEventListener("click", () => addCategory());
+  byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
 }
 
 // ---- grid rendering ------------------------------------------------------
@@ -77,9 +78,10 @@ function renderGrid(): void {
   const thead = document.createElement("thead");
   const hr = document.createElement("tr");
   hr.appendChild(th("Series"));
-  currentData.categories.forEach((cat) => {
+  currentData.categories.forEach((cat, ci) => {
     const cell = document.createElement("th");
     cell.appendChild(input("cat", cat, "text"));
+    cell.appendChild(removeBtn(() => removeCategory(ci), "Remove category"));
     hr.appendChild(cell);
   });
   hr.appendChild(th(""));
@@ -107,7 +109,7 @@ function renderGrid(): void {
     });
 
     const rm = document.createElement("td");
-    rm.appendChild(removeBtn(() => removeSeries(si)));
+    rm.appendChild(removeBtn(() => removeSeries(si), "Remove series"));
     tr.appendChild(rm);
     tbody.appendChild(tr);
   });
@@ -160,6 +162,52 @@ function removeSeries(index: number): void {
   if (currentData.series.length <= 1) return;
   currentData.series.splice(index, 1);
   renderGrid();
+}
+
+function removeCategory(index: number): void {
+  currentData = readGrid();
+  if (currentData.categories.length <= 1) return;
+  currentData.categories.splice(index, 1);
+  currentData.series.forEach((s) => s.values.splice(index, 1));
+  renderGrid();
+}
+
+/** Load a range pasted from Excel: top row = categories, first column = series names. */
+function loadPasted(): void {
+  const ta = byId("pasteArea") as HTMLTextAreaElement;
+  const parsed = parsePasted(ta.value);
+  if (!parsed) {
+    status("Couldn't read that. Paste a grid with a header row and a header column.", true);
+    return;
+  }
+  currentData = parsed;
+  renderGrid();
+  ta.value = "";
+  const details = byId("pasteArea").closest("details");
+  if (details) (details as HTMLDetailsElement).open = false;
+  status(
+    `Loaded ${parsed.categories.length} categories × ${parsed.series.length} series. Review, then Insert or Update.`
+  );
+}
+
+function parsePasted(text: string): ChartData | null {
+  const rows = text
+    .replace(/\r/g, "")
+    .split("\n")
+    .filter((r) => r.trim().length > 0)
+    .map((r) => r.split("\t"));
+  if (rows.length < 2 || rows[0].length < 2) return null;
+
+  const categories = rows[0].slice(1).map((c, i) => c.trim() || `Cat ${i + 1}`);
+  const series: Series[] = rows.slice(1).map((r, ri) => ({
+    name: (r[0] || "").trim() || `Series ${ri + 1}`,
+    color: PALETTE[ri % PALETTE.length],
+    values: categories.map((_, ci) => {
+      const n = Number((r[ci + 1] || "").replace(/[,\s%]/g, ""));
+      return isFinite(n) ? n : 0;
+    }),
+  }));
+  return { type: "stackedColumn", categories, series };
 }
 
 // ---- PowerPoint operations ----------------------------------------------
@@ -359,10 +407,10 @@ function input(cls: string, value: string, type: string): HTMLInputElement {
   return el;
 }
 
-function removeBtn(onClick: () => void): HTMLButtonElement {
+function removeBtn(onClick: () => void, title = "Remove"): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = "rm";
-  b.title = "Remove series";
+  b.title = title;
   b.textContent = "×";
   b.addEventListener("click", onClick);
   return b;
