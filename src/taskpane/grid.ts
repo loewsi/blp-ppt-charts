@@ -1,7 +1,9 @@
 // Lightweight Excel-like data grid (no dependency, full control).
 // Full-sheet layout: row 0 = category names, column 0 = series names, interior
-// = values. Every cell is editable. Supports keyboard nav, Ctrl+Space /
-// Shift+Space selection, Ctrl+"+"/Ctrl+"-" insert/remove, and Excel copy/paste.
+// = values. Excel-style two modes: "navigate" (arrows move the selection,
+// typing starts an edit) and "edit" (arrows move the caret). Range selection by
+// mouse drag or Shift+arrows; Ctrl+Space / Shift+Space select column / row;
+// Ctrl+"+" / Ctrl+"-" insert / remove; Excel copy & paste (TSV).
 //
 // Pure helpers (cellsFromData/dataFromCells/pasteInto/insert*/remove*) are unit
 // tested; the DOM/keyboard layer wraps them.
@@ -79,33 +81,32 @@ let onChange: (() => void) | undefined;
 let cells: Cells = [[""]];
 let seriesColors: string[] = [];
 let active = { r: 1, c: 1 };
-let sel: { type: "cell" | "row" | "col"; r: number; c: number } = { type: "cell", r: 1, c: 1 };
+let anchor = { r: 1, c: 1 };
+let editing = false;
+let dragging = false;
 
 export function mountGrid(container: HTMLElement, changed?: () => void): void {
   host = container;
   onChange = changed;
+  document.addEventListener("mouseup", () => (dragging = false));
 }
 
 export function setGridData(data: ChartData): void {
   cells = cellsFromData(data);
   seriesColors = data.series.map((s) => s.color);
+  clampActive();
   render();
 }
 
 export function getGridData(): ChartData {
-  syncFromDom();
   return dataFromCells(cells, seriesColors);
 }
 
-function syncFromDom(): void {
-  if (!host) return;
-  host.querySelectorAll<HTMLInputElement>("input.xcell").forEach((inp) => {
-    const r = Number(inp.dataset.r);
-    const c = Number(inp.dataset.c);
-    if (cells[r]) cells[r][c] = inp.value;
-  });
+export function setSeriesColor(index: number, color: string): void {
+  seriesColors[index] = color;
 }
 
+// ---- rendering -----------------------------------------------------------
 function render(): void {
   if (!host) return;
   host.innerHTML = "";
@@ -118,18 +119,16 @@ function render(): void {
       const inp = document.createElement("input");
       inp.className = "xcell" + (r === 0 || c === 0 ? " xhead" : "");
       inp.value = val;
+      inp.readOnly = true;
       inp.dataset.r = String(r);
       inp.dataset.c = String(c);
-      if (r === 0 && c === 0) inp.disabled = true;
       inp.addEventListener("input", () => (cells[r][c] = inp.value));
-      inp.addEventListener("focus", () => {
-        active = { r, c };
-        sel = { type: "cell", r, c };
-        paint();
-      });
-      inp.addEventListener("keydown", onKey);
-      inp.addEventListener("paste", onPaste);
+      inp.addEventListener("mousedown", (e) => onMouseDown(r, c, e));
+      inp.addEventListener("mouseover", () => onMouseOver(r, c));
+      inp.addEventListener("dblclick", () => beginEdit(r, c));
+      inp.addEventListener("keydown", (e) => onKey(e, r, c));
       inp.addEventListener("copy", onCopy);
+      inp.addEventListener("paste", onPaste);
       td.appendChild(inp);
       tr.appendChild(td);
     });
@@ -139,55 +138,128 @@ function render(): void {
   paint();
 }
 
-function cellAt(r: number, c: number): HTMLInputElement | null {
+function inputAt(r: number, c: number): HTMLInputElement | null {
   return host.querySelector<HTMLInputElement>(`input.xcell[data-r="${r}"][data-c="${c}"]`);
 }
 
-function focusCell(r: number, c: number): void {
-  const el = cellAt(r, c);
-  if (el) {
-    el.focus();
-    el.select();
-  }
+function selRect() {
+  return {
+    r0: Math.min(anchor.r, active.r),
+    r1: Math.max(anchor.r, active.r),
+    c0: Math.min(anchor.c, active.c),
+    c1: Math.max(anchor.c, active.c),
+  };
 }
 
 function paint(): void {
+  const { r0, r1, c0, c1 } = selRect();
   host.querySelectorAll<HTMLInputElement>("input.xcell").forEach((inp) => {
     const r = Number(inp.dataset.r);
     const c = Number(inp.dataset.c);
-    const selected =
-      (sel.type === "col" && c === sel.c) ||
-      (sel.type === "row" && r === sel.r) ||
-      (sel.type === "cell" && r === active.r && c === active.c);
-    inp.classList.toggle("sel", selected);
+    inp.classList.toggle("sel", r >= r0 && r <= r1 && c >= c0 && c <= c1);
+    inp.classList.toggle("active", r === active.r && c === active.c);
   });
 }
 
-function onKey(e: KeyboardEvent): void {
-  const r = active.r;
-  const c = active.c;
+function clampActive(): void {
+  const R = cells.length;
+  const C = cells[0]?.length ?? 1;
+  active.r = Math.min(Math.max(0, active.r), R - 1);
+  active.c = Math.min(Math.max(0, active.c), C - 1);
+  anchor.r = Math.min(Math.max(0, anchor.r), R - 1);
+  anchor.c = Math.min(Math.max(0, anchor.c), C - 1);
+}
+
+function moveTo(r: number, c: number, extend: boolean): void {
   const R = cells.length;
   const C = cells[0].length;
+  active = { r: Math.min(Math.max(0, r), R - 1), c: Math.min(Math.max(0, c), C - 1) };
+  if (!extend) anchor = { ...active };
+  editing = false;
+  const el = inputAt(active.r, active.c);
+  if (el) {
+    el.readOnly = true;
+    el.focus();
+  }
+  paint();
+}
 
-  // Selection: Ctrl+Space = column, Shift+Space = row (Excel).
+function beginEdit(r: number, c: number, replaceWith?: string): void {
+  active = { r, c };
+  anchor = { r, c };
+  editing = true;
+  const el = inputAt(r, c);
+  if (!el) return;
+  el.readOnly = false;
+  if (replaceWith !== undefined) {
+    el.value = replaceWith;
+    cells[r][c] = replaceWith;
+  }
+  el.focus();
+  const end = el.value.length;
+  el.setSelectionRange(end, end);
+  paint();
+}
+
+// ---- mouse ---------------------------------------------------------------
+function onMouseDown(r: number, c: number, e: MouseEvent): void {
+  if (editing && r === active.r && c === active.c) return; // clicking inside the cell being edited
+  dragging = true;
+  if (e.shiftKey) {
+    active = { r, c }; // extend from existing anchor
+  } else {
+    anchor = { r, c };
+    active = { r, c };
+  }
+  editing = false;
+  const el = inputAt(r, c);
+  if (el) el.readOnly = true;
+  paint();
+}
+
+function onMouseOver(r: number, c: number): void {
+  if (!dragging) return;
+  active = { r, c };
+  paint();
+}
+
+// ---- keyboard ------------------------------------------------------------
+function onKey(e: KeyboardEvent, r: number, c: number): void {
+  if (editing) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      moveTo(r + 1, c, false);
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      moveTo(r, e.shiftKey ? c - 1 : c + 1, false);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      const el = inputAt(r, c);
+      if (el) el.value = cells[r][c]; // input listener already committed; keep as-is
+      moveTo(r, c, false);
+    }
+    return; // arrows etc. edit the caret
+  }
+
+  // ---- navigate mode ----
   if (e.code === "Space" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
-    sel = { type: "col", r, c };
+    anchor = { r: 0, c };
+    active = { r: cells.length - 1, c };
     paint();
     return;
   }
   if (e.code === "Space" && e.shiftKey) {
     e.preventDefault();
-    sel = { type: "row", r, c };
+    anchor = { r, c: 0 };
+    active = { r, c: cells[0].length - 1 };
     paint();
     return;
   }
-
-  // Insert / remove: Ctrl+"+" and Ctrl+"-" act on the current selection.
   if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
     e.preventDefault();
-    if (sel.type === "col") cells = insertColumn(cells, Math.max(1, c));
-    else cells = insertRow(cells, Math.max(1, r));
+    const isCol = selRect().r0 === 0 && selRect().r1 === cells.length - 1;
+    cells = isCol ? insertColumn(cells, Math.max(1, c)) : insertRow(cells, Math.max(1, r));
     seriesColors = syncColors();
     render();
     emit();
@@ -195,53 +267,73 @@ function onKey(e: KeyboardEvent): void {
   }
   if ((e.ctrlKey || e.metaKey) && (e.key === "-" || e.key === "_")) {
     e.preventDefault();
-    if (sel.type === "col") cells = removeColumn(cells, c > 0 ? c : 1);
-    else cells = removeRow(cells, r > 0 ? r : 1);
+    const isCol = selRect().r0 === 0 && selRect().r1 === cells.length - 1;
+    cells = isCol ? removeColumn(cells, Math.max(1, c)) : removeRow(cells, Math.max(1, r));
     seriesColors = syncColors();
+    clampActive();
     render();
     emit();
     return;
   }
+  if (e.key === "ArrowUp") return nav(e, r - 1, c);
+  if (e.key === "ArrowDown" || e.key === "Enter") return nav(e, r + 1, c);
+  if (e.key === "ArrowLeft") return nav(e, r, c - 1);
+  if (e.key === "ArrowRight") return nav(e, r, c + 1);
+  if (e.key === "Tab") return nav(e, r, e.shiftKey ? c - 1 : c + 1, false);
+  if (e.key === "F2") {
+    e.preventDefault();
+    beginEdit(r, c);
+    return;
+  }
+  if (e.key === "Delete" || e.key === "Backspace") {
+    e.preventDefault();
+    const { r0, r1, c0, c1 } = selRect();
+    for (let rr = r0; rr <= r1; rr++) for (let cc = c0; cc <= c1; cc++) cells[rr][cc] = "";
+    render();
+    emit();
+    return;
+  }
+  // A printable character starts editing (Excel: overwrite).
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    beginEdit(r, c, e.key);
+  }
+}
 
-  // Navigation.
-  let nr = r;
-  let nc = c;
-  if (e.key === "Enter" || e.key === "ArrowDown") nr = Math.min(R - 1, r + 1);
-  else if (e.key === "ArrowUp") nr = Math.max(0, r - 1);
-  else if (e.key === "Tab" && !e.shiftKey) nc = c + 1 >= C ? (nr === R - 1 ? c : ((nr = r + 1), 1)) : c + 1;
-  else if (e.key === "Tab" && e.shiftKey) nc = Math.max(0, c - 1);
-  else return; // let other keys type normally (ArrowLeft/Right move the caret)
-
+function nav(e: KeyboardEvent, r: number, c: number, extendAllowed = true): void {
   e.preventDefault();
-  if (nr === 0 && nc === 0) nc = 1; // skip the disabled corner
-  active = { r: nr, c: nc };
-  sel = { type: "cell", r: nr, c: nc };
-  focusCell(nr, nc);
+  moveTo(r, c, extendAllowed && e.shiftKey);
+}
+
+// ---- clipboard -----------------------------------------------------------
+function onCopy(e: ClipboardEvent): void {
+  const { r0, r1, c0, c1 } = selRect();
+  const lines: string[] = [];
+  for (let r = r0; r <= r1; r++) lines.push(cells[r].slice(c0, c1 + 1).join("\t"));
+  e.preventDefault();
+  e.clipboardData?.setData("text/plain", lines.join("\n"));
 }
 
 function onPaste(e: ClipboardEvent): void {
   const text = e.clipboardData?.getData("text") ?? "";
-  if (!text.includes("\t") && !text.includes("\n")) return; // single value: let default paste
+  if (!text) return;
+  if (!text.includes("\t") && !text.includes("\n")) {
+    // single value → let it edit the active cell normally
+    if (!editing) beginEdit(active.r, active.c, text);
+    e.preventDefault();
+    if (editing) cells[active.r][active.c] = text;
+    render();
+    emit();
+    return;
+  }
   e.preventDefault();
-  syncFromDom();
-  cells = pasteInto(cells, active.r, active.c, text);
+  const { r0, c0 } = selRect();
+  cells = pasteInto(cells, r0, c0, text);
   seriesColors = syncColors();
   render();
-  focusCell(active.r, active.c);
   emit();
 }
 
-function onCopy(e: ClipboardEvent): void {
-  syncFromDom();
-  let text = "";
-  if (sel.type === "col") text = cells.map((row) => row[sel.c] ?? "").join("\n");
-  else if (sel.type === "row") text = (cells[sel.r] ?? []).join("\t");
-  else return; // single cell: default copy
-  e.preventDefault();
-  e.clipboardData?.setData("text/plain", text);
-}
-
-/** Keep the seriesColors array length in sync with the number of series rows. */
 function syncColors(): string[] {
   const nSeries = Math.max(0, cells.length - 1);
   const out: string[] = [];
@@ -249,10 +341,7 @@ function syncColors(): string[] {
   return out;
 }
 
-export function setSeriesColor(index: number, color: string): void {
-  seriesColors[index] = color;
-}
-
 function emit(): void {
+  paint();
   if (onChange) onChange();
 }
