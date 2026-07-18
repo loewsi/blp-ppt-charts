@@ -16,6 +16,7 @@ import {
   defaultOptions,
 } from "../model/chartModel";
 import { detectCapabilities } from "../office/capabilities";
+import { loadMasterAccents } from "../office/theme";
 import { drawChart } from "../engine/render";
 import {
   deleteChart,
@@ -126,7 +127,7 @@ function wire(): void {
   byId("addCatBtn").addEventListener("click", () => addCategory());
   byId("removeCatBtn").addEventListener("click", () => removeCategory());
   byId("transposeBtn").addEventListener("click", () => transpose());
-  byId("applyColorsBtn").addEventListener("click", () => applyColors());
+  byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
   byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
 }
 
@@ -212,9 +213,18 @@ function transpose(): void {
   renderGrid();
 }
 
-function applyColors(): void {
+async function applyColors(): Promise<void> {
   const scheme = (byId("colorScheme") as HTMLSelectElement).value;
-  const palette = PALETTES[scheme] ?? PALETTES.blp;
+  let palette: string[];
+  if (scheme === "master") {
+    palette = await withSlide((ctx, slide) => loadMasterAccents(ctx, slide));
+    if (palette.length === 0) {
+      status("Couldn't read master colors on this host — using BLP instead.", true);
+      palette = PALETTES.blp;
+    }
+  } else {
+    palette = PALETTES[scheme] ?? PALETTES.blp;
+  }
   currentData = readGrid();
   currentData.series.forEach((s, i) => {
     s.color = palette[i % palette.length];

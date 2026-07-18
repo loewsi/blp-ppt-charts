@@ -68,12 +68,24 @@ export const DEFAULT_BOX: ChartBox = { left: 120, top: 150, width: 380, height: 
 /** BLP brand palette, cycled across series. */
 export const PALETTE = ["#2E75FF", "#001C54", "#9CC0FF", "#5A93FF", "#C7DEFF", "#3F5B8C"];
 
-/** Named color schemes the user can apply to all series at once. */
+// Named presets applied to all series at once. "master" is handled separately
+// (read live from the theme). BLP is mainly-blue: the first several entries are
+// blue shades, so typical charts stay blue and only pull in other accents when
+// there are many series.
 export const PALETTES: Record<string, string[]> = {
-  blp: ["#2E75FF", "#001C54", "#9CC0FF", "#5A93FF", "#C7DEFF", "#3F5B8C"],
-  "blp-cool": ["#001C54", "#2E75FF", "#5A93FF", "#9CC0FF", "#C7DEFF", "#E0F0FF"],
-  grayscale: ["#2B2B2B", "#555555", "#808080", "#A9A9A9", "#CCCCCC", "#E6E6E6"],
-  vivid: ["#2E75FF", "#FF6B35", "#00B37E", "#FFC145", "#B14AED", "#FF4D6D"],
+  blp: [
+    "#2E75FF", // BLP blue
+    "#001C54", // dark navy
+    "#5A93FF",
+    "#9CC0FF",
+    "#12377E",
+    "#7FB0FF",
+    "#E8412C", // accents only kick in past ~6 series
+    "#F5A623",
+    "#2FA84F",
+    "#7B4FE0",
+  ],
+  grayscale: ["#2B2B2B", "#555555", "#808080", "#A9A9A9", "#C7C7C7", "#E2E2E2"],
 };
 
 export const DEFAULT_NUMBER_FORMAT: NumberFormat = {
