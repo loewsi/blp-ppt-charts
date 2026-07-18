@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grid demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; }
+      #grid { height: 260px; width: 520px; border: 1px solid #ccc; }
+      button { margin: 8px 0; }
+      pre { background: #f4f4f4; padding: 8px; max-width: 520px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h3>RevoGrid smoke test</h3>
+    <div id="grid"></div>
+    <button id="dump">Dump getGridData()</button>
+    <pre id="out"></pre>
+    <script type="module" src="/src/taskpane/grid-demo.ts"></script>
+  </body>
+</html>

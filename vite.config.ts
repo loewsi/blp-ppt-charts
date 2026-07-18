@@ -26,6 +26,7 @@ export default defineConfig(async () => {
         input: {
           taskpane: "taskpane.html",
           commands: "commands.html",
+          "grid-demo": "grid-demo.html",
         },
       },
     },
