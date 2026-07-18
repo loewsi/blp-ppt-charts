@@ -44,8 +44,8 @@ export function mountGrid(container: HTMLElement): void {
   const g = gridEl as any;
   g.theme = "compact";
   g.resize = true;
-  g.rowHeaders = true; // show 1,2,3 row numbers like Excel
-  g.range = true; // range selection + fill
+  g.rowHeaders = false; // row 0 already holds category names; avoid a confusing gutter
+  g.range = true; // range selection + fill + clipboard
   container.appendChild(gridEl);
 
   // Keep our local `source` in sync with edits (single-cell and pasted ranges).

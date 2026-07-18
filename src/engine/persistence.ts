@@ -1,6 +1,6 @@
 import type { ChartModel, ChartBox } from "../model/chartModel";
 import { normalizeModel } from "../model/chartModel";
-import { TAG_ID, TAG_MODEL } from "./tags";
+import { TAG_ID, TAG_MODEL, TAG_PART } from "./tags";
 
 /** Read every BLP chart on a slide by parsing the model stamped on anchor shapes. */
 export async function getSlideCharts(
@@ -42,13 +42,18 @@ export async function getChartBox(
 
   const probes = shapes.items.map((s) => {
     const tag = s.tags.getItemOrNullObject(TAG_ID);
+    const part = s.tags.getItemOrNullObject(TAG_PART);
     tag.load("value, isNullObject");
+    part.load("value, isNullObject");
     s.load("left, top, width, height");
-    return { s, tag };
+    return { s, tag, part };
   });
   await context.sync();
 
-  const matching = probes.filter((p) => !p.tag.isNullObject && p.tag.value === id).map((p) => p.s);
+  const mine = probes.filter((p) => !p.tag.isNullObject && p.tag.value === id);
+  // Prefer the chart part (exclude the separate legend group) for the box.
+  const chartOnly = mine.filter((p) => !p.part.isNullObject && p.part.value === "chart");
+  const matching = (chartOnly.length > 0 ? chartOnly : mine).map((p) => p.s);
   if (matching.length === 0) return null;
 
   // Union of all matching shapes (a single group, or many shapes on old hosts).

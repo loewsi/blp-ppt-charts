@@ -12,6 +12,7 @@ const PAD_MAIN = 22; // value-axis end: room for totals
 const PAD_CROSS = 26; // category-axis end: room for category labels
 const PAD_MINOR = 6;
 const MIN_SEG_FOR_LABEL = 12; // pt along the value axis
+const MIN_LABEL_W = 22; // minimum label box width (pt)
 
 /**
  * One engine for the whole column/bar family. Orientation (column|bar) and
@@ -89,7 +90,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   }
 
   function pushCenteredLabel(cx: number, cy: number, thick: number, text: string, size: number, meta: ShapeMeta) {
-    const w = isColumn ? thick : 64;
+    const w = Math.max(isColumn ? thick : 64, MIN_LABEL_W); // min box width; centered on (cx, cy)
     prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size, bold: false, align: "center", meta });
   }
 

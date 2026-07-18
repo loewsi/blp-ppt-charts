@@ -97,9 +97,36 @@ function wire(): void {
 }
 
 // ---- grid bridge ---------------------------------------------------------
-/** Push the current model into the grid. */
+/** Push the current model into the grid (and refresh the series color swatches). */
 function renderGrid(): void {
   setGridData(currentData);
+  renderSeriesColors();
+}
+
+/** Real-color swatches, one per series; editing one recolors that whole series. */
+function renderSeriesColors(): void {
+  const box = byId("seriesColors");
+  box.innerHTML = "";
+  currentData.series.forEach((s, i) => {
+    const row = document.createElement("label");
+    row.className = "swatch";
+    const sw = document.createElement("input");
+    sw.type = "color";
+    sw.value = s.color;
+    sw.addEventListener("change", () => {
+      const cur = readGrid();
+      if (cur.series[i]) cur.series[i].color = sw.value;
+      currentData = cur;
+      setGridData(cur);
+      renderSeriesColors();
+      status("Color changed — Update the chart to apply it on the slide.");
+    });
+    const name = document.createElement("span");
+    name.textContent = s.name;
+    row.appendChild(sw);
+    row.appendChild(name);
+    box.appendChild(row);
+  });
 }
 
 /** Read the grid back into a ChartData. */

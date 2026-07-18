@@ -1,7 +1,7 @@
 import type { ChartModel } from "../model/chartModel";
 import type { Primitive, Align } from "./primitives";
 import { computeLayout } from "./layout";
-import { TAG_ID, TAG_ANCHOR, TAG_MODEL } from "./tags";
+import { TAG_ID, TAG_ANCHOR, TAG_MODEL, TAG_PART } from "./tags";
 
 /** Draw a chart's primitives as native PowerPoint shapes and tag them so the
  *  chart can be found, re-read and re-drawn later. */
@@ -15,18 +15,33 @@ export async function drawChart(
   const created = prims.map((p) => makeShape(shapes, p));
   await context.sync(); // shapes must exist before they can be grouped
 
-  const canGroup =
-    created.length > 1 &&
-    Office.context.requirements.isSetSupported("PowerPointApi", "1.8");
+  // The legend is its own group so it can be moved independently and doesn't
+  // stretch when the chart is resized.
+  const isLegend = (i: number) => {
+    const t = prims[i].meta?.objectType;
+    return t === "legend" || t === "legendEntry";
+  };
+  const chartShapes = created.filter((_, i) => !isLegend(i));
+  const legendShapes = created.filter((_, i) => isLegend(i));
 
-  if (canGroup) {
-    // One selectable/movable object; tag the group with the model.
-    const group = shapes.addGroup(created);
-    tagChart(group, model);
+  const canGroup = Office.context.requirements.isSetSupported("PowerPointApi", "1.8");
+
+  if (canGroup && chartShapes.length > 1) {
+    const chartGroup = shapes.addGroup(chartShapes);
+    tagChart(chartGroup, model);
+    if (legendShapes.length > 1) {
+      const legendGroup = shapes.addGroup(legendShapes);
+      legendGroup.tags.add(TAG_ID, model.id);
+      legendGroup.tags.add(TAG_PART, "legend");
+    } else if (legendShapes.length === 1) {
+      legendShapes[0].tags.add(TAG_ID, model.id);
+      legendShapes[0].tags.add(TAG_PART, "legend");
+    }
   } else {
     // Fallback for hosts without grouping (PowerPointApi < 1.8): tag each shape.
     created.forEach((shape, i) => {
       shape.tags.add(TAG_ID, model.id);
+      shape.tags.add(TAG_PART, isLegend(i) ? "legend" : "chart");
       if (i === 0) {
         shape.tags.add(TAG_ANCHOR, "1");
         shape.tags.add(TAG_MODEL, JSON.stringify(model));
@@ -39,6 +54,7 @@ export async function drawChart(
 function tagChart(shape: PowerPoint.Shape, model: ChartModel): void {
   shape.tags.add(TAG_ID, model.id);
   shape.tags.add(TAG_ANCHOR, "1");
+  shape.tags.add(TAG_PART, "chart");
   shape.tags.add(TAG_MODEL, JSON.stringify(model));
 }
 
@@ -97,6 +113,7 @@ function makeShape(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint
   tf.bottomMargin = 0;
   tf.leftMargin = 0;
   tf.rightMargin = 0;
+  tf.verticalAlignment = "Middle"; // vertically center text in its box
   const tr = tf.textRange;
   tr.font.size = p.size;
   tr.font.bold = p.bold;
