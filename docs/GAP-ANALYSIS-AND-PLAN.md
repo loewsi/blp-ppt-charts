@@ -19,7 +19,7 @@ Classification vs the architecture brief. Legend: ✅ aligned · 🟡 partial ·
 | 9 | Stable IDs, copy/duplicate handling | ❌ | `chartId` only; per-object IDs in render plan but not persisted; duplicate-ID repair unbuilt 🔬 |
 | 10 | Native shapes; update-in-place re-render | 🟡 | Native shapes ✅; currently delete-and-recreate, not in-place 🔬 |
 | 11 | Local spreadsheet-style grid | 🟡 | Grid with add/remove/reorder/transpose/paste ✅; no keyboard-nav/inline-preview; custom grid, no library |
-| 12 | Stacked-column feature scope | 🟡 | Colors/segment labels/totals/legend?/axis? — colors+labels+totals ✅; legend/axis/gridlines pending |
+| 12 | Stacked-column feature scope | 🟡 | Colors + segment labels + totals + legend + gridlines + value axis ✅ (opt-in); per-segment color override pending |
 | 13 | Manual label offsets (model support) | ❌ | Not in model yet; planned as `LabelPlacement` |
 | 14 | Future chart features possible | ✅ | Registry + render plan designed for it |
 | 15 | CAGR annotation model (semantic anchors) | ❌ | Annotation model not yet added |
@@ -59,10 +59,9 @@ Classification vs the architecture brief. Legend: ✅ aligned · 🟡 partial ·
   reopen; copies get fresh `chartId`s; verified on Windows and Mac.
 - **Phase 2 — Local data editor.** ✅ mostly (grid, add/remove/reorder/transpose, paste). *Add:*
   keyboard navigation, explicit Apply/Cancel draft state, inline validation messages.
-- **Phase 3 — Core formatting.** Series colors ✅, segment colors 🟡 (per-series done, per-segment
-  pending), segment labels ✅, total labels ✅, **legend** (pending), **axis + gridlines**
-  (pending). *Accept:* legend on/off + position; optional value axis + gridlines; per-segment
-  color override stored in the model.
+- **Phase 3 — Core formatting.** Series colors ✅, segment labels ✅, total labels ✅, **legend**
+  ✅ (opt-in), **value axis + gridlines** ✅ (opt-in). *Remaining:* per-segment color override
+  stored in the model; legend position choice. Per-series color schemes ✅.
 - **Phase 4 — Interaction quality (🔬).** Update-in-place re-render; manual label offsets;
   sub-object selection; undo behaviour documented/tested; duplicate-ID repair; error recovery.
 - **Phase 5 — Offline & release.** Verify editing after network loss; document restart-offline
