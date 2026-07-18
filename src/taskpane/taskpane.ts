@@ -59,7 +59,38 @@ Office.onReady((info) => {
     Office.EventType.DocumentSelectionChanged,
     onSelectionChanged
   );
+
+  // Opt-in: no shape-resize event exists in Office.js, so we poll the chart's
+  // size and re-lay-out once it settles (no live preview, so nothing jumps).
+  setInterval(() => void pollResize(), 1000);
 });
+
+let lastPolled: ChartBox | null = null;
+
+async function pollResize(): Promise<void> {
+  if (busy || !currentId) return;
+  if (!(byId("optAutoResize") as HTMLInputElement).checked) return;
+  let box: ChartBox | null = null;
+  try {
+    box = await withSlide((ctx, slide) => getChartBox(ctx, slide, currentId!));
+  } catch {
+    return;
+  }
+  if (!box) return;
+  const settled = lastPolled !== null && sameBox(box, lastPolled);
+  const changed = !sameBox(box, currentBox);
+  lastPolled = box;
+  if (settled && changed) await updateChart(); // recompute at the live size
+}
+
+function sameBox(a: ChartBox, b: ChartBox): boolean {
+  return (
+    Math.abs(a.left - b.left) < 1 &&
+    Math.abs(a.top - b.top) < 1 &&
+    Math.abs(a.width - b.width) < 1 &&
+    Math.abs(a.height - b.height) < 1
+  );
+}
 
 async function onSelectionChanged(): Promise<void> {
   if (busy) return;

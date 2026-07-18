@@ -1,4 +1,6 @@
-// Throwaway smoke test for the RevoGrid wrapper (not part of the add-in build target).
+// Throwaway smoke test for the custom grid (loads the real grid CSS so it looks
+// like it does in the task pane).
+import "./taskpane.css";
 import { mountGrid, setGridData, getGridData } from "./grid";
 
 const container = document.getElementById("grid") as HTMLElement;
