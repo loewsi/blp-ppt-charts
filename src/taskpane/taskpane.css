@@ -50,6 +50,7 @@ button.ghost:hover { background: var(--blp-pale); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .actions .primary { flex: 1; }
 
+.grid { height: 220px; width: 100%; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 .grid-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
 table { border-collapse: collapse; width: 100%; }
 th, td { padding: 3px; border-bottom: 1px solid var(--line); text-align: center; }

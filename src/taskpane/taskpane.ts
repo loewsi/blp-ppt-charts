@@ -24,6 +24,7 @@ import {
   getChartBox,
 } from "../engine/persistence";
 import { newId } from "../util/id";
+import { mountGrid, setGridData, getGridData } from "./grid";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
@@ -41,6 +42,7 @@ Office.onReady((info) => {
   }
   show("app");
   wire();
+  mountGrid(byId("grid"));
   setOptionsUI(defaultOptions());
   renderGrid();
   setMode();
@@ -50,14 +52,12 @@ Office.onReady((info) => {
     status("Heads up: this PowerPoint build can't group shapes — charts insert as separate shapes.");
   }
 
-  // Auto-load whichever chart the user selects on the slide.
   Office.context.document.addHandlerAsync(
     Office.EventType.DocumentSelectionChanged,
     onSelectionChanged
   );
 });
 
-/** Fires when the slide selection changes — pull the selected chart into the editor. */
 async function onSelectionChanged(): Promise<void> {
   if (busy) return;
   try {
@@ -88,107 +88,41 @@ function wire(): void {
   byId("refreshBtn").addEventListener("click", () => guard(refreshList));
   byId("loadBtn").addEventListener("click", () => guard(loadSelected));
   byId("addSeriesBtn").addEventListener("click", () => addSeries());
+  byId("removeSeriesBtn").addEventListener("click", () => removeSeries());
   byId("addCatBtn").addEventListener("click", () => addCategory());
+  byId("removeCatBtn").addEventListener("click", () => removeCategory());
   byId("transposeBtn").addEventListener("click", () => transpose());
   byId("applyColorsBtn").addEventListener("click", () => applyColors());
   byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
 }
 
-function applyColors(): void {
-  const scheme = (byId("colorScheme") as HTMLSelectElement).value;
-  const palette = PALETTES[scheme] ?? PALETTES.blp;
-  currentData = readGrid();
-  currentData.series.forEach((s, i) => {
-    s.color = palette[i % palette.length];
-  });
-  renderGrid();
-  status(`Applied ${scheme} colors. Insert or Update to apply on the slide.`);
-}
-
-// ---- grid rendering ------------------------------------------------------
+// ---- grid bridge ---------------------------------------------------------
+/** Push the current model into the grid. */
 function renderGrid(): void {
-  const table = byId("grid");
-  table.innerHTML = "";
-
-  const thead = document.createElement("thead");
-  const hr = document.createElement("tr");
-  hr.appendChild(th("Series"));
-  currentData.categories.forEach((cat, ci) => {
-    const cell = document.createElement("th");
-    cell.appendChild(input("cat", cat, "text"));
-    const catCtl = document.createElement("div");
-    catCtl.className = "series-head";
-    catCtl.appendChild(miniBtn("◀", "Move left", () => moveCategory(ci, -1)));
-    catCtl.appendChild(miniBtn("▶", "Move right", () => moveCategory(ci, 1)));
-    catCtl.appendChild(removeBtn(() => removeCategory(ci), "Remove category"));
-    cell.appendChild(catCtl);
-    hr.appendChild(cell);
-  });
-  hr.appendChild(th(""));
-  thead.appendChild(hr);
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  currentData.series.forEach((s, si) => {
-    const tr = document.createElement("tr");
-
-    const head = document.createElement("td");
-    const wrap = document.createElement("div");
-    wrap.className = "series-head";
-    wrap.appendChild(input("sname", s.name, "text"));
-    wrap.appendChild(input("scolor", s.color, "color"));
-    head.appendChild(wrap);
-    tr.appendChild(head);
-
-    currentData.categories.forEach((_, ci) => {
-      const td = document.createElement("td");
-      const inp = input("val", String(s.values[ci] ?? 0), "number");
-      inp.dataset.ci = String(ci);
-      td.appendChild(inp);
-      tr.appendChild(td);
-    });
-
-    const rm = document.createElement("td");
-    rm.appendChild(miniBtn("▲", "Move up", () => moveSeries(si, -1)));
-    rm.appendChild(miniBtn("▼", "Move down", () => moveSeries(si, 1)));
-    rm.appendChild(removeBtn(() => removeSeries(si), "Remove series"));
-    tr.appendChild(rm);
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
+  setGridData(currentData);
 }
 
-/** Read the current DOM state back into a ChartData. */
+/** Read the grid back into a ChartData. */
 function readGrid(): ChartData {
-  const table = byId("grid");
-  const categories = [...table.querySelectorAll<HTMLInputElement>(".cat")].map(
-    (i, idx) => i.value.trim() || `Cat ${idx + 1}`
-  );
-
-  const series: Series[] = [...table.querySelectorAll<HTMLTableRowElement>("tbody tr")].map(
-    (tr, idx) => {
-      const name = tr.querySelector<HTMLInputElement>(".sname")!.value.trim() || `Series ${idx + 1}`;
-      const color = tr.querySelector<HTMLInputElement>(".scolor")!.value || PALETTE[idx % PALETTE.length];
-      const values = [...tr.querySelectorAll<HTMLInputElement>(".val")].map((v) => {
-        const n = Number(v.value);
-        return isFinite(n) ? n : 0;
-      });
-      return { name, color, values };
-    }
-  );
-
-  return { type: "barColumn", categories, series };
+  return getGridData();
 }
 
 // ---- structural edits ----------------------------------------------------
 function addSeries(): void {
   currentData = readGrid();
-  const idx = currentData.series.length;
+  const i = currentData.series.length;
   currentData.series.push({
-    name: `Series ${idx + 1}`,
-    color: PALETTE[idx % PALETTE.length],
+    name: `Series ${i + 1}`,
+    color: PALETTE[i % PALETTE.length],
     values: currentData.categories.map(() => 0),
   });
+  renderGrid();
+}
+
+function removeSeries(): void {
+  currentData = readGrid();
+  if (currentData.series.length <= 1) return;
+  currentData.series.pop();
   renderGrid();
 }
 
@@ -199,40 +133,11 @@ function addCategory(): void {
   renderGrid();
 }
 
-function removeSeries(index: number): void {
-  currentData = readGrid();
-  if (currentData.series.length <= 1) return;
-  currentData.series.splice(index, 1);
-  renderGrid();
-}
-
-function removeCategory(index: number): void {
+function removeCategory(): void {
   currentData = readGrid();
   if (currentData.categories.length <= 1) return;
-  currentData.categories.splice(index, 1);
-  currentData.series.forEach((s) => s.values.splice(index, 1));
-  renderGrid();
-}
-
-function moveSeries(i: number, dir: number): void {
-  currentData = readGrid();
-  const j = i + dir;
-  if (j < 0 || j >= currentData.series.length) return;
-  [currentData.series[i], currentData.series[j]] = [currentData.series[j], currentData.series[i]];
-  renderGrid();
-}
-
-function moveCategory(i: number, dir: number): void {
-  currentData = readGrid();
-  const j = i + dir;
-  if (j < 0 || j >= currentData.categories.length) return;
-  [currentData.categories[i], currentData.categories[j]] = [
-    currentData.categories[j],
-    currentData.categories[i],
-  ];
-  currentData.series.forEach((s) => {
-    [s.values[i], s.values[j]] = [s.values[j], s.values[i]];
-  });
+  currentData.categories.pop();
+  currentData.series.forEach((s) => s.values.pop());
   renderGrid();
 }
 
@@ -248,7 +153,18 @@ function transpose(): void {
   renderGrid();
 }
 
-/** Load a range pasted from Excel: top row = categories, first column = series names. */
+function applyColors(): void {
+  const scheme = (byId("colorScheme") as HTMLSelectElement).value;
+  const palette = PALETTES[scheme] ?? PALETTES.blp;
+  currentData = readGrid();
+  currentData.series.forEach((s, i) => {
+    s.color = palette[i % palette.length];
+  });
+  renderGrid();
+  status(`Applied ${scheme} colors. Insert or Update to apply on the slide.`);
+}
+
+// ---- paste fallback (RevoGrid also pastes natively into cells) -----------
 function loadPasted(): void {
   const ta = byId("pasteArea") as HTMLTextAreaElement;
   const parsed = parsePasted(ta.value);
@@ -324,7 +240,6 @@ async function updateChart(): Promise<void> {
   busy = true;
   try {
     await withSlide(async (context, slide) => {
-      // Redraw where the chart currently sits (respects moves/resizes).
       const liveBox = await getChartBox(context, slide, currentId!);
       const box = liveBox ?? currentBox;
       await deleteChart(context, slide, currentId!);
@@ -346,7 +261,6 @@ async function updateChart(): Promise<void> {
   status(`Updated ${currentName || "chart"}.`);
 }
 
-/** Load whatever chart is currently selected on the slide. */
 async function editSelected(): Promise<void> {
   await withSlide(async (context, slide) => {
     const id = await getSelectedChartId(context);
@@ -402,7 +316,6 @@ function resetToNew(): void {
   status("New chart. Edit values, then Insert.");
 }
 
-/** Point the editor at an existing chart model. */
 function applyModel(model: ChartModel): void {
   currentData = model.data;
   currentBox = model.box;
@@ -413,7 +326,6 @@ function applyModel(model: ChartModel): void {
   setMode();
 }
 
-/** Run a callback against the selected slide (falls back to the first slide). */
 async function withSlide<T>(
   cb: (context: PowerPoint.RequestContext, slide: PowerPoint.Slide) => Promise<T>
 ): Promise<T> {
@@ -477,38 +389,6 @@ function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Missing element #${id}`);
   return el as T;
-}
-
-function th(text: string): HTMLTableCellElement {
-  const el = document.createElement("th");
-  el.textContent = text;
-  return el;
-}
-
-function input(cls: string, value: string, type: string): HTMLInputElement {
-  const el = document.createElement("input");
-  el.className = cls;
-  el.type = type;
-  el.value = value;
-  return el;
-}
-
-function removeBtn(onClick: () => void, title = "Remove"): HTMLButtonElement {
-  const b = document.createElement("button");
-  b.className = "rm";
-  b.title = title;
-  b.textContent = "×";
-  b.addEventListener("click", onClick);
-  return b;
-}
-
-function miniBtn(label: string, title: string, onClick: () => void): HTMLButtonElement {
-  const b = document.createElement("button");
-  b.className = "mini";
-  b.title = title;
-  b.textContent = label;
-  b.addEventListener("click", onClick);
-  return b;
 }
 
 // ---- chart-style options <-> UI -----------------------------------------
