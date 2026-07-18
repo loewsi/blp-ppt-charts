@@ -4,6 +4,7 @@ import type { Primitive, ShapeMeta } from "./primitives";
 import { formatNumber, formatPercent } from "./format";
 
 const AXIS_COLOR = "#001C54";
+const GRID_COLOR = "#D7E2F4";
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
 
@@ -33,18 +34,22 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const order = data.categories.map((_, i) => i);
   if (opt.reverseCategories) order.reverse();
 
+  // Extra reserved bands (only when the feature is on, so defaults are unchanged).
+  const legendBand = opt.showLegend ? 24 : 0;
+  const axisBand = opt.showValueAxis ? 28 : 0;
+
   // Plot rectangle (points).
   let plotLeft: number, plotTop: number, plotW: number, plotH: number;
   if (isColumn) {
-    plotLeft = box.left + PAD_MINOR;
+    plotLeft = box.left + PAD_MINOR + axisBand;
     plotTop = box.top + PAD_MAIN;
-    plotW = box.width - PAD_MINOR * 2;
-    plotH = box.height - PAD_MAIN - PAD_CROSS;
+    plotW = box.width - PAD_MINOR * 2 - axisBand;
+    plotH = box.height - PAD_MAIN - PAD_CROSS - legendBand;
   } else {
     plotLeft = box.left + PAD_CROSS;
     plotTop = box.top + PAD_MINOR;
     plotW = box.width - PAD_CROSS - PAD_MAIN;
-    plotH = box.height - PAD_MINOR * 2;
+    plotH = box.height - PAD_MINOR - legendBand - axisBand;
   }
 
   const catExtent = isColumn ? plotW : plotH;
@@ -105,6 +110,51 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     }
   }
 
+  function axisText(t: number): string {
+    if (norm100) return `${Math.round(t * 100)}%`;
+    return formatNumber(t, { ...nf, hideZero: false });
+  }
+
+  function drawGridAxis() {
+    for (const t of niceTicks(maxVal, 4)) {
+      if (isColumn) {
+        const y = plotTop + plotH - t * valScale;
+        if (opt.showGridlines && t > 0) {
+          prims.push({ kind: "line", x1: plotLeft, y1: y, x2: plotLeft + plotW, y2: y, color: GRID_COLOR, weight: 0.75, meta: { objectType: "gridline" } });
+        }
+        if (opt.showValueAxis) {
+          prims.push({ kind: "text", x: box.left, y: y - 7, w: axisBand - 3, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "right", meta: { objectType: "valueAxis" } });
+        }
+      } else {
+        const x = plotLeft + t * valScale;
+        if (opt.showGridlines && t > 0) {
+          prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: GRID_COLOR, weight: 0.75, meta: { objectType: "gridline" } });
+        }
+        if (opt.showValueAxis) {
+          prims.push({ kind: "text", x: x - 22, y: plotTop + plotH + 2, w: 44, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "center", meta: { objectType: "valueAxis" } });
+        }
+      }
+    }
+  }
+
+  function drawLegend() {
+    const sw = 10;
+    const gapx = 6;
+    const itemGap = 14;
+    const widths = data.series.map((s) => sw + gapx + Math.max(20, s.name.length * 5.5));
+    const total = widths.reduce((a, b) => a + b, 0) + itemGap * Math.max(0, data.series.length - 1);
+    let x = box.left + Math.max(0, (box.width - total) / 2);
+    const y = box.top + box.height - legendBand + 6;
+    data.series.forEach((s, i) => {
+      prims.push({ kind: "rect", x, y: y + 1, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+      prims.push({ kind: "text", x: x + sw + gapx, y: y - 3, w: widths[i] - sw - gapx, h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", meta: { objectType: "legend", seriesIndex: i } });
+      x += widths[i] + itemGap;
+    });
+  }
+
+  // Gridlines/axis first, so gridlines sit behind the bars.
+  if (opt.showGridlines || opt.showValueAxis) drawGridAxis();
+
   for (let k = 0; k < nCats; k++) {
     const ci = order[k];
     const slotStart = k * slot + (slot - catThick) / 2;
@@ -160,7 +210,21 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     prims.push({ kind: "line", x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
   }
 
+  if (opt.showLegend) drawLegend();
+
   return prims;
+}
+
+/** "Nice" axis tick values from 0 up to ~max (1/2/5 × 10^n steps). */
+export function niceTicks(max: number, target = 4): number[] {
+  if (!(max > 0)) return [0];
+  const raw = max / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+  const ticks: number[] = [];
+  for (let t = 0; t <= max + step * 1e-9; t += step) ticks.push(Number(t.toFixed(10)));
+  return ticks;
 }
 
 function safe(v: number | undefined): number {

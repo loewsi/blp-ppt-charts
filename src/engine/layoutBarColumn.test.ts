@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { layoutBarColumn } from "./layoutBarColumn";
+import { layoutBarColumn, niceTicks } from "./layoutBarColumn";
 import type { RectPrimitive } from "./primitives";
 import type { ChartModel, ChartOptions } from "../model/chartModel";
 import { defaultOptions } from "../model/chartModel";
@@ -97,6 +97,45 @@ describe("layoutBarColumn — zero values", () => {
       )
     );
     expect(segRects(prims).length).toBe(1);
+  });
+});
+
+describe("layoutBarColumn — furniture (opt-in)", () => {
+  it("defaults draw no legend/gridlines/axis", () => {
+    const prims = layoutBarColumn(model({}));
+    expect(prims.some((s) => s.meta?.objectType === "legend")).toBe(false);
+    expect(prims.some((s) => s.meta?.objectType === "gridline")).toBe(false);
+    expect(prims.some((s) => s.meta?.objectType === "valueAxis")).toBe(false);
+  });
+
+  it("legend adds one entry + label per series", () => {
+    const prims = layoutBarColumn(model({ showLegend: true }));
+    expect(prims.filter((s) => s.meta?.objectType === "legendEntry").length).toBe(2);
+    expect(prims.filter((s) => s.meta?.objectType === "legend").length).toBe(2);
+  });
+
+  it("gridlines and axis labels appear when enabled", () => {
+    const prims = layoutBarColumn(model({ showGridlines: true, showValueAxis: true }));
+    expect(prims.some((s) => s.meta?.objectType === "gridline")).toBe(true);
+    expect(prims.some((s) => s.meta?.objectType === "valueAxis")).toBe(true);
+  });
+});
+
+describe("niceTicks", () => {
+  it("returns [0] for non-positive max", () => {
+    expect(niceTicks(0)).toEqual([0]);
+    expect(niceTicks(-5)).toEqual([0]);
+  });
+
+  it("starts at 0 and covers the max", () => {
+    const ticks = niceTicks(40, 4);
+    expect(ticks[0]).toBe(0);
+    expect(ticks[ticks.length - 1]).toBeGreaterThanOrEqual(40);
+  });
+
+  it("is strictly increasing", () => {
+    const ticks = niceTicks(37, 4);
+    for (let i = 1; i < ticks.length; i++) expect(ticks[i]).toBeGreaterThan(ticks[i - 1]);
   });
 });
 

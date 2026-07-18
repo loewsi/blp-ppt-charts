@@ -523,6 +523,9 @@ function readOptions(): ChartOptions {
     showTotals: c("optTotals"),
     showValueLabels: c("optLabels"),
     reverseCategories: c("optReverse"),
+    showLegend: c("optLegend"),
+    showGridlines: c("optGridlines"),
+    showValueAxis: c("optAxis"),
     numberFormat: {
       decimals: clampInt(Number(v("nfDecimals")), 0, 3),
       scale: v("nfScale") as "none" | "k" | "M",
@@ -540,6 +543,9 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optTotals") as HTMLInputElement).checked = o.showTotals;
   (byId("optLabels") as HTMLInputElement).checked = o.showValueLabels;
   (byId("optReverse") as HTMLInputElement).checked = o.reverseCategories;
+  (byId("optLegend") as HTMLInputElement).checked = o.showLegend;
+  (byId("optGridlines") as HTMLInputElement).checked = o.showGridlines;
+  (byId("optAxis") as HTMLInputElement).checked = o.showValueAxis;
   (byId("nfDecimals") as HTMLInputElement).value = String(o.numberFormat.decimals);
   (byId("nfScale") as HTMLSelectElement).value = o.numberFormat.scale;
   (byId("nfPrefix") as HTMLInputElement).value = o.numberFormat.prefix;

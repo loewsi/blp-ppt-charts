@@ -37,6 +37,9 @@ export interface ChartOptions {
   showTotals: boolean; // totals at the end of each stack
   showValueLabels: boolean; // value inside each segment/bar
   reverseCategories: boolean;
+  showLegend: boolean; // series legend at the bottom
+  showGridlines: boolean; // value-axis gridlines across the plot
+  showValueAxis: boolean; // value-axis tick labels
   numberFormat: NumberFormat;
 }
 
@@ -88,6 +91,9 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   showTotals: true,
   showValueLabels: true,
   reverseCategories: false,
+  showLegend: false,
+  showGridlines: false,
+  showValueAxis: false,
   numberFormat: { ...DEFAULT_NUMBER_FORMAT },
 };
 
