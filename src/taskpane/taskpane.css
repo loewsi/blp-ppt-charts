@@ -50,7 +50,22 @@ button.ghost:hover { background: var(--blp-pale); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .actions .primary { flex: 1; }
 
-.grid { height: 220px; width: 100%; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.grid { max-height: 240px; width: 100%; border: 1px solid var(--line); border-radius: 6px; overflow: auto; }
+.xgrid { border-collapse: collapse; }
+.xgrid td { padding: 0; border: 1px solid var(--line); }
+.xcell {
+  border: none;
+  outline: none;
+  width: 72px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  text-align: right;
+}
+.xcell.xhead { font-weight: 600; color: var(--blp-dark); background: var(--blp-pale); text-align: left; }
+.xcell.sel { background: #cfe0ff; }
+.xcell:focus { box-shadow: inset 0 0 0 2px var(--blp-blue); background: #fff; }
 .grid-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
 table { border-collapse: collapse; width: 100%; }
 th, td { padding: 3px; border-bottom: 1px solid var(--line); text-align: center; }

@@ -24,7 +24,7 @@ import {
   getChartBox,
 } from "../engine/persistence";
 import { newId } from "../util/id";
-import { mountGrid, setGridData, getGridData } from "./grid";
+import { mountGrid, setGridData, getGridData, setSeriesColor } from "./grid";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
@@ -42,7 +42,10 @@ Office.onReady((info) => {
   }
   show("app");
   wire();
-  mountGrid(byId("grid"));
+  mountGrid(byId("grid"), () => {
+    currentData = getGridData();
+    renderSeriesColors();
+  });
   setOptionsUI(defaultOptions());
   renderGrid();
   setMode();
@@ -114,10 +117,8 @@ function renderSeriesColors(): void {
     sw.type = "color";
     sw.value = s.color;
     sw.addEventListener("change", () => {
-      const cur = readGrid();
-      if (cur.series[i]) cur.series[i].color = sw.value;
-      currentData = cur;
-      setGridData(cur);
+      setSeriesColor(i, sw.value);
+      currentData = readGrid();
       renderSeriesColors();
       status("Color changed — Update the chart to apply it on the slide.");
     });
