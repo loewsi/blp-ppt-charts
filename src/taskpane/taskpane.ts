@@ -7,7 +7,15 @@ import type {
   Orientation,
   Grouping,
 } from "../model/chartModel";
-import { DEFAULT_BOX, PALETTE, defaultData, defaultOptions } from "../model/chartModel";
+import {
+  DEFAULT_BOX,
+  PALETTE,
+  PALETTES,
+  CURRENT_SCHEMA_VERSION,
+  defaultData,
+  defaultOptions,
+} from "../model/chartModel";
+import { detectCapabilities } from "../office/capabilities";
 import { drawChart } from "../engine/render";
 import {
   deleteChart,
@@ -36,6 +44,11 @@ Office.onReady((info) => {
   setOptionsUI(defaultOptions());
   renderGrid();
   setMode();
+
+  const caps = detectCapabilities();
+  if (!caps.supportsGrouping) {
+    status("Heads up: this PowerPoint build can't group shapes — charts insert as separate shapes.");
+  }
 
   // Auto-load whichever chart the user selects on the slide.
   Office.context.document.addHandlerAsync(
@@ -77,7 +90,19 @@ function wire(): void {
   byId("addSeriesBtn").addEventListener("click", () => addSeries());
   byId("addCatBtn").addEventListener("click", () => addCategory());
   byId("transposeBtn").addEventListener("click", () => transpose());
+  byId("applyColorsBtn").addEventListener("click", () => applyColors());
   byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
+}
+
+function applyColors(): void {
+  const scheme = (byId("colorScheme") as HTMLSelectElement).value;
+  const palette = PALETTES[scheme] ?? PALETTES.blp;
+  currentData = readGrid();
+  currentData.series.forEach((s, i) => {
+    s.color = palette[i % palette.length];
+  });
+  renderGrid();
+  status(`Applied ${scheme} colors. Insert or Update to apply on the slide.`);
 }
 
 // ---- grid rendering ------------------------------------------------------
@@ -271,7 +296,14 @@ async function insertChart(): Promise<void> {
     await withSlide(async (context, slide) => {
       const existing = await getSlideCharts(context, slide);
       const name = `Chart ${existing.length + 1}`;
-      const model: ChartModel = { id: newId(), version: 1, name, data, box, options: readOptions() };
+      const model: ChartModel = {
+        id: newId(),
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        name,
+        data,
+        box,
+        options: readOptions(),
+      };
       await drawChart(context, slide, model);
       currentId = model.id;
       currentName = name;
@@ -298,7 +330,7 @@ async function updateChart(): Promise<void> {
       await deleteChart(context, slide, currentId!);
       const model: ChartModel = {
         id: currentId!,
-        version: 1,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         name: currentName || "Chart",
         data,
         box,

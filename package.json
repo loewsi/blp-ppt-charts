@@ -11,10 +11,12 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 3000",
+    "test": "vitest run",
     "validate": "office-addin-manifest validate manifest.xml"
   },
   "devDependencies": {
     "@types/office-js": "^1.0.377",
+    "vitest": "^2.1.8",
     "office-addin-dev-certs": "^1.13.0",
     "office-addin-manifest": "^1.13.0",
     "typescript": "^5.6.0",

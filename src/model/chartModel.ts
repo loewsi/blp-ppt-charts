@@ -50,17 +50,28 @@ export interface ChartBox {
 
 export interface ChartModel {
   id: string;
-  version: 1;
+  schemaVersion: number;
   name: string;
   data: ChartData;
   box: ChartBox;
   options: ChartOptions;
 }
 
+/** Bump when the stored model shape changes; normalizeModel migrates older ones. */
+export const CURRENT_SCHEMA_VERSION = 1;
+
 export const DEFAULT_BOX: ChartBox = { left: 120, top: 150, width: 380, height: 230 };
 
 /** BLP brand palette, cycled across series. */
 export const PALETTE = ["#2E75FF", "#001C54", "#9CC0FF", "#5A93FF", "#C7DEFF", "#3F5B8C"];
+
+/** Named color schemes the user can apply to all series at once. */
+export const PALETTES: Record<string, string[]> = {
+  blp: ["#2E75FF", "#001C54", "#9CC0FF", "#5A93FF", "#C7DEFF", "#3F5B8C"],
+  "blp-cool": ["#001C54", "#2E75FF", "#5A93FF", "#9CC0FF", "#C7DEFF", "#E0F0FF"],
+  grayscale: ["#2B2B2B", "#555555", "#808080", "#A9A9A9", "#CCCCCC", "#E6E6E6"],
+  vivid: ["#2E75FF", "#FF6B35", "#00B37E", "#FFC145", "#B14AED", "#FF4D6D"],
+};
 
 export const DEFAULT_NUMBER_FORMAT: NumberFormat = {
   decimals: 0,
@@ -95,10 +106,12 @@ export function defaultData(): ChartData {
   };
 }
 
-/** Fill in options/type for models saved by older builds. */
+/** Fill in schemaVersion/options/type for models saved by older builds. */
 export function normalizeModel(m: ChartModel): ChartModel {
+  const legacyVersion = (m as { version?: number }).version;
   return {
     ...m,
+    schemaVersion: m.schemaVersion ?? legacyVersion ?? CURRENT_SCHEMA_VERSION,
     data: { ...m.data, type: "barColumn" },
     options: m.options
       ? { ...DEFAULT_OPTIONS, ...m.options, numberFormat: { ...DEFAULT_NUMBER_FORMAT, ...m.options.numberFormat } }

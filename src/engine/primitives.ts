@@ -5,6 +5,30 @@
 
 export type Align = "left" | "center" | "right";
 
+// Semantic identity of a rendered shape, so each primitive maps back to its
+// chart-model role (enables sub-object selection and update-in-place later).
+export type ObjectType =
+  | "chartContainer"
+  | "plotArea"
+  | "segment"
+  | "segmentLabel"
+  | "totalLabel"
+  | "categoryLabel"
+  | "legend"
+  | "legendEntry"
+  | "valueAxis"
+  | "gridline"
+  | "baseline"
+  | "cagrArrow"
+  | "differenceArrow"
+  | "valueLine";
+
+export interface ShapeMeta {
+  objectType: ObjectType;
+  seriesIndex?: number;
+  categoryIndex?: number;
+}
+
 export interface RectPrimitive {
   kind: "rect";
   x: number;
@@ -12,6 +36,7 @@ export interface RectPrimitive {
   w: number;
   h: number;
   fill: string; // "#RRGGBB"
+  meta?: ShapeMeta;
 }
 
 export interface TextPrimitive {
@@ -25,6 +50,7 @@ export interface TextPrimitive {
   size: number; // points
   bold: boolean;
   align: Align;
+  meta?: ShapeMeta;
 }
 
 export interface LinePrimitive {
@@ -35,6 +61,7 @@ export interface LinePrimitive {
   y2: number;
   color: string;
   weight: number; // points
+  meta?: ShapeMeta;
 }
 
 export type Primitive = RectPrimitive | TextPrimitive | LinePrimitive;
