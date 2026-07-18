@@ -37,9 +37,14 @@ export interface ChartOptions {
   showTotals: boolean; // totals at the end of each stack
   showValueLabels: boolean; // value inside each segment/bar
   reverseCategories: boolean;
-  showLegend: boolean; // series legend at the bottom
+  showLegend: boolean; // series legend
+  legendPosition: "top" | "bottom" | "left" | "right";
   showGridlines: boolean; // value-axis gridlines across the plot
   showValueAxis: boolean; // value-axis tick labels
+  labelOverflow: "hide" | "outside"; // small-segment labels: hide, or place outside
+  fontFamily: string; // font for all labels
+  segmentFontSize: number; // pt, segment/value labels
+  totalFontSize: number; // pt, total labels
   numberFormat: NumberFormat;
 }
 
@@ -104,8 +109,13 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   showValueLabels: true,
   reverseCategories: false,
   showLegend: false,
+  legendPosition: "bottom",
   showGridlines: false,
   showValueAxis: false,
+  labelOverflow: "outside",
+  fontFamily: "Roboto",
+  segmentFontSize: 9,
+  totalFontSize: 10,
   numberFormat: { ...DEFAULT_NUMBER_FORMAT },
 };
 

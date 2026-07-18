@@ -35,23 +35,32 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const order = data.categories.map((_, i) => i);
   if (opt.reverseCategories) order.reverse();
 
-  // Extra reserved bands (only when the feature is on, so defaults are unchanged).
-  const legendBand = opt.showLegend ? 24 : 0;
+  // Reserved bands (only when a feature is on, so defaults are unchanged).
   const axisBand = opt.showValueAxis ? 28 : 0;
+  const legendH = 24; // horizontal legend band (top/bottom)
+  const legendW = 92; // vertical legend band (left/right)
+  const legendPos = opt.legendPosition;
 
-  // Plot rectangle (points).
-  let plotLeft: number, plotTop: number, plotW: number, plotH: number;
-  if (isColumn) {
-    plotLeft = box.left + PAD_MINOR + axisBand;
-    plotTop = box.top + PAD_MAIN;
-    plotW = box.width - PAD_MINOR * 2 - axisBand;
-    plotH = box.height - PAD_MAIN - PAD_CROSS - legendBand;
-  } else {
-    plotLeft = box.left + PAD_CROSS;
-    plotTop = box.top + PAD_MINOR;
-    plotW = box.width - PAD_CROSS - PAD_MAIN;
-    plotH = box.height - PAD_MINOR - legendBand - axisBand;
+  // Accumulate insets on each side.
+  let insTop = isColumn ? PAD_MAIN : PAD_MINOR;
+  let insBottom = isColumn ? PAD_CROSS : PAD_MINOR;
+  let insLeft = isColumn ? PAD_MINOR : PAD_CROSS;
+  let insRight = isColumn ? PAD_MINOR : PAD_MAIN;
+  if (opt.showValueAxis) {
+    if (isColumn) insLeft += axisBand;
+    else insBottom += axisBand;
   }
+  if (opt.showLegend) {
+    if (legendPos === "top") insTop += legendH;
+    else if (legendPos === "bottom") insBottom += legendH;
+    else if (legendPos === "left") insLeft += legendW;
+    else insRight += legendW;
+  }
+
+  const plotLeft = box.left + insLeft;
+  const plotTop = box.top + insTop;
+  const plotW = box.width - insLeft - insRight;
+  const plotH = box.height - insTop - insBottom;
 
   const catExtent = isColumn ? plotW : plotH;
   const valExtent = isColumn ? plotH : plotW;
@@ -89,25 +98,36 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     return { cx: x + w / 2, cy: y + thick / 2 };
   }
 
-  function pushCenteredLabel(cx: number, cy: number, thick: number, text: string, size: number, meta: ShapeMeta) {
+  const fam = opt.fontFamily;
+
+  function pushCenteredLabel(cx: number, cy: number, thick: number, text: string, meta: ShapeMeta) {
     const w = Math.max(isColumn ? thick : 64, MIN_LABEL_W); // min box width; centered on (cx, cy)
-    prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size, bold: false, align: "center", meta });
+    prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
+  }
+
+  // Small segment: put the value just outside the column/bar instead of hiding it.
+  function pushOutsideLabel(cx: number, cy: number, halfThick: number, text: string, meta: ShapeMeta) {
+    if (isColumn) {
+      prims.push({ kind: "text", x: cx + halfThick + 3, y: cy - 7, w: 46, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "left", family: fam, meta });
+    } else {
+      prims.push({ kind: "text", x: cx - 23, y: cy - halfThick - 14, w: 46, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
+    }
   }
 
   function pushTotal(catStart: number, thick: number, stackPx: number, text: string, meta: ShapeMeta) {
     if (isColumn) {
       const y = plotTop + plotH - stackPx - 18;
-      prims.push({ kind: "text", x: plotLeft + catStart - 8, y, w: thick + 16, h: 16, text, color: LABEL_DARK, size: 10, bold: true, align: "center", meta });
+      prims.push({ kind: "text", x: plotLeft + catStart - 8, y, w: thick + 16, h: 16, text, color: LABEL_DARK, size: opt.totalFontSize, bold: true, align: "center", family: fam, meta });
     } else {
-      prims.push({ kind: "text", x: plotLeft + stackPx + 4, y: plotTop + catStart + thick / 2 - 8, w: PAD_MAIN + 26, h: 16, text, color: LABEL_DARK, size: 10, bold: true, align: "left", meta });
+      prims.push({ kind: "text", x: plotLeft + stackPx + 4, y: plotTop + catStart + thick / 2 - 8, w: PAD_MAIN + 26, h: 16, text, color: LABEL_DARK, size: opt.totalFontSize, bold: true, align: "left", family: fam, meta });
     }
   }
 
   function pushCategoryLabel(catStart: number, thick: number, text: string, meta: ShapeMeta) {
     if (isColumn) {
-      prims.push({ kind: "text", x: plotLeft + catStart - (slot - thick) / 2, y: plotTop + plotH + 3, w: slot, h: 16, text, color: LABEL_DARK, size: 9, bold: false, align: "center", meta });
+      prims.push({ kind: "text", x: plotLeft + catStart - (slot - thick) / 2, y: plotTop + plotH + 3, w: slot, h: 16, text, color: LABEL_DARK, size: 9, bold: false, align: "center", family: fam, meta });
     } else {
-      prims.push({ kind: "text", x: box.left, y: plotTop + catStart + thick / 2 - 8, w: PAD_CROSS - 3, h: 16, text, color: LABEL_DARK, size: 9, bold: false, align: "right", meta });
+      prims.push({ kind: "text", x: box.left, y: plotTop + catStart + thick / 2 - 8, w: PAD_CROSS - 3, h: 16, text, color: LABEL_DARK, size: 9, bold: false, align: "right", family: fam, meta });
     }
   }
 
@@ -124,7 +144,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           prims.push({ kind: "line", x1: plotLeft, y1: y, x2: plotLeft + plotW, y2: y, color: GRID_COLOR, weight: 0.75, meta: { objectType: "gridline" } });
         }
         if (opt.showValueAxis) {
-          prims.push({ kind: "text", x: box.left, y: y - 7, w: axisBand - 3, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "right", meta: { objectType: "valueAxis" } });
+          prims.push({ kind: "text", x: box.left, y: y - 7, w: axisBand - 3, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "right", family: fam, meta: { objectType: "valueAxis" } });
         }
       } else {
         const x = plotLeft + t * valScale;
@@ -132,7 +152,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: GRID_COLOR, weight: 0.75, meta: { objectType: "gridline" } });
         }
         if (opt.showValueAxis) {
-          prims.push({ kind: "text", x: x - 22, y: plotTop + plotH + 2, w: 44, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "center", meta: { objectType: "valueAxis" } });
+          prims.push({ kind: "text", x: x - 22, y: plotTop + plotH + 2, w: 44, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "center", family: fam, meta: { objectType: "valueAxis" } });
         }
       }
     }
@@ -141,16 +161,26 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   function drawLegend() {
     const sw = 10;
     const gapx = 6;
-    const itemGap = 14;
-    const widths = data.series.map((s) => sw + gapx + Math.max(20, s.name.length * 5.5));
-    const total = widths.reduce((a, b) => a + b, 0) + itemGap * Math.max(0, data.series.length - 1);
-    let x = box.left + Math.max(0, (box.width - total) / 2);
-    const y = box.top + box.height - legendBand + 6;
-    data.series.forEach((s, i) => {
-      prims.push({ kind: "rect", x, y: y + 1, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-      prims.push({ kind: "text", x: x + sw + gapx, y: y - 3, w: widths[i] - sw - gapx, h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", meta: { objectType: "legend", seriesIndex: i } });
-      x += widths[i] + itemGap;
-    });
+    if (legendPos === "top" || legendPos === "bottom") {
+      const itemGap = 14;
+      const widths = data.series.map((s) => sw + gapx + Math.max(20, s.name.length * 5.5));
+      const total = widths.reduce((a, b) => a + b, 0) + itemGap * Math.max(0, data.series.length - 1);
+      let x = box.left + Math.max(0, (box.width - total) / 2);
+      const y = legendPos === "top" ? box.top + 4 : box.top + box.height - legendH + 6;
+      data.series.forEach((s, i) => {
+        prims.push({ kind: "rect", x, y: y + 1, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y: y - 3, w: widths[i] - sw - gapx, h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        x += widths[i] + itemGap;
+      });
+    } else {
+      const x = legendPos === "left" ? box.left + 4 : box.left + box.width - legendW + 4;
+      let y = plotTop;
+      data.series.forEach((s, i) => {
+        prims.push({ kind: "rect", x, y: y + 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y: y - 1, w: legendW - sw - gapx - 6, h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        y += 16;
+      });
+    }
   }
 
   // Gridlines/axis first, so gridlines sit behind the bars.
@@ -172,9 +202,13 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           seriesIndex: si,
           categoryIndex: ci,
         });
-        if (opt.showValueLabels && v * valScale >= MIN_SEG_FOR_LABEL) {
+        if (opt.showValueLabels) {
           const text = norm100 ? formatPercent(raw, total, nf.decimals) : formatNumber(raw, nf);
-          if (text) pushCenteredLabel(r.cx, r.cy, catThick, text, 9, { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci });
+          const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
+          if (text) {
+            if (v * valScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, catThick, text, m);
+            else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, catThick / 2, text, m);
+          }
         }
         cum += v;
       }
@@ -192,9 +226,13 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           seriesIndex: si,
           categoryIndex: ci,
         });
-        if (opt.showValueLabels && raw * valScale >= MIN_SEG_FOR_LABEL) {
+        if (opt.showValueLabels) {
           const text = formatNumber(raw, nf);
-          if (text) pushCenteredLabel(r.cx, r.cy, laneThick, text, 8, { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci });
+          const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
+          if (text) {
+            if (raw * valScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
+            else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, laneThick / 2, text, m);
+          }
         }
       }
     }

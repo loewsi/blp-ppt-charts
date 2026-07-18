@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { layoutBarColumn, niceTicks } from "./layoutBarColumn";
-import type { RectPrimitive } from "./primitives";
+import type { RectPrimitive, TextPrimitive } from "./primitives";
 import type { ChartModel, ChartOptions } from "../model/chartModel";
 import { defaultOptions } from "../model/chartModel";
 
@@ -118,6 +118,36 @@ describe("layoutBarColumn — furniture (opt-in)", () => {
     const prims = layoutBarColumn(model({ showGridlines: true, showValueAxis: true }));
     expect(prims.some((s) => s.meta?.objectType === "gridline")).toBe(true);
     expect(prims.some((s) => s.meta?.objectType === "valueAxis")).toBe(true);
+  });
+});
+
+describe("layoutBarColumn — small labels & fonts", () => {
+  const small = {
+    type: "barColumn" as const,
+    categories: ["A"],
+    series: [
+      { name: "S1", color: "#111", values: [98] },
+      { name: "S2", color: "#222", values: [2] }, // tiny segment
+    ],
+  };
+  const segLabels = (p: ReturnType<typeof layoutBarColumn>) =>
+    p.filter((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "segmentLabel");
+
+  it("places a small segment's label outside when labelOverflow=outside", () => {
+    expect(segLabels(layoutBarColumn(model({ labelOverflow: "outside" }, small))).length).toBe(2);
+  });
+
+  it("hides small labels when labelOverflow=hide", () => {
+    expect(segLabels(layoutBarColumn(model({ labelOverflow: "hide" }, small))).length).toBe(1);
+  });
+
+  it("applies font family and per-type sizes", () => {
+    const prims = layoutBarColumn(model({ fontFamily: "Arial", segmentFontSize: 11, totalFontSize: 14 }));
+    const seg = prims.find((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "segmentLabel");
+    const tot = prims.find((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "totalLabel");
+    expect(seg?.family).toBe("Arial");
+    expect(seg?.size).toBe(11);
+    expect(tot?.size).toBe(14);
   });
 });
 

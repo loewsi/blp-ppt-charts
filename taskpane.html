@@ -71,6 +71,14 @@
           <label class="chk"><input id="optLegend" type="checkbox" /> Legend</label>
           <label class="chk"><input id="optGridlines" type="checkbox" /> Gridlines</label>
           <label class="chk"><input id="optAxis" type="checkbox" /> Value axis</label>
+          <label>Legend pos
+            <select id="legendPosition">
+              <option value="bottom">Bottom</option>
+              <option value="top">Top</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
         </div>
 
         <label class="lbl mt">Number format</label>
@@ -88,6 +96,28 @@
           <label>Prefix <input id="nfPrefix" type="text" placeholder="$" /></label>
           <label>Suffix <input id="nfSuffix" type="text" placeholder="kg" /></label>
           <label class="chk"><input id="nfHideZero" type="checkbox" checked /> Hide zeros</label>
+        </div>
+
+        <label class="lbl mt">Text &amp; labels</label>
+        <div class="opts">
+          <label>Font
+            <select id="fontFamily">
+              <option>Roboto</option>
+              <option>Arial</option>
+              <option>Calibri</option>
+              <option>Segoe UI</option>
+              <option>Georgia</option>
+              <option>Verdana</option>
+            </select>
+          </label>
+          <label>Small labels
+            <select id="labelOverflow">
+              <option value="outside">Show outside</option>
+              <option value="hide">Hide</option>
+            </select>
+          </label>
+          <label>Segment size <input id="segFontSize" type="number" min="6" max="24" step="1" value="9" /></label>
+          <label>Total size <input id="totFontSize" type="number" min="6" max="24" step="1" value="10" /></label>
         </div>
 
         <label class="lbl mt">Colors</label>

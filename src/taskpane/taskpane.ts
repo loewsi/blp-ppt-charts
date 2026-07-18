@@ -473,8 +473,13 @@ function readOptions(): ChartOptions {
     showValueLabels: c("optLabels"),
     reverseCategories: c("optReverse"),
     showLegend: c("optLegend"),
+    legendPosition: v("legendPosition") as "top" | "bottom" | "left" | "right",
     showGridlines: c("optGridlines"),
     showValueAxis: c("optAxis"),
+    labelOverflow: v("labelOverflow") as "hide" | "outside",
+    fontFamily: v("fontFamily"),
+    segmentFontSize: clampInt(Number(v("segFontSize")), 6, 24),
+    totalFontSize: clampInt(Number(v("totFontSize")), 6, 24),
     numberFormat: {
       decimals: clampInt(Number(v("nfDecimals")), 0, 3),
       scale: v("nfScale") as "none" | "k" | "M",
@@ -493,8 +498,13 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optLabels") as HTMLInputElement).checked = o.showValueLabels;
   (byId("optReverse") as HTMLInputElement).checked = o.reverseCategories;
   (byId("optLegend") as HTMLInputElement).checked = o.showLegend;
+  (byId("legendPosition") as HTMLSelectElement).value = o.legendPosition;
   (byId("optGridlines") as HTMLInputElement).checked = o.showGridlines;
   (byId("optAxis") as HTMLInputElement).checked = o.showValueAxis;
+  (byId("labelOverflow") as HTMLSelectElement).value = o.labelOverflow;
+  (byId("fontFamily") as HTMLSelectElement).value = o.fontFamily;
+  (byId("segFontSize") as HTMLInputElement).value = String(o.segmentFontSize);
+  (byId("totFontSize") as HTMLInputElement).value = String(o.totalFontSize);
   (byId("nfDecimals") as HTMLInputElement).value = String(o.numberFormat.decimals);
   (byId("nfScale") as HTMLSelectElement).value = o.numberFormat.scale;
   (byId("nfPrefix") as HTMLInputElement).value = o.numberFormat.prefix;

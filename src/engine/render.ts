@@ -118,7 +118,7 @@ function makeShape(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint
   tr.font.size = p.size;
   tr.font.bold = p.bold;
   tr.font.color = p.color;
-  tr.font.name = "Roboto";
+  tr.font.name = p.family ?? "Roboto";
   tr.paragraphFormat.horizontalAlignment = hAlign(p.align);
   return s;
 }

@@ -50,6 +50,7 @@ export interface TextPrimitive {
   size: number; // points
   bold: boolean;
   align: Align;
+  family?: string; // font family; defaults to Roboto in the adapter
   meta?: ShapeMeta;
 }
 
