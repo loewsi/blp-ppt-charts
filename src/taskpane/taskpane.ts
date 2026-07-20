@@ -197,7 +197,7 @@ function show(which: "app" | "unsupported"): void {
 }
 
 const OPTION_IDS = [
-  "chartType", "optOrientation", "optGrouping", "optGap", "optTotals", "optLabels", "optReverse",
+  "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optConnectors", "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
@@ -489,10 +489,13 @@ function readOptions(): ChartOptions {
   const v = (id: string) => (byId(id) as HTMLInputElement | HTMLSelectElement).value;
   const c = (id: string) => (byId(id) as HTMLInputElement).checked;
   const gapPct = Number(v("optGap"));
+  const refRaw = v("optRefValue").trim();
+  const refNum = Number(refRaw);
   return {
     orientation: v("optOrientation") as Orientation,
     grouping: v("optGrouping") as Grouping,
     gap: Math.min(0.9, Math.max(0, (isFinite(gapPct) ? gapPct : 35) / 100)),
+    referenceValue: refRaw !== "" && isFinite(refNum) ? refNum : null,
     showTotals: c("optTotals"),
     showValueLabels: c("optLabels"),
     reverseCategories: c("optReverse"),
@@ -522,6 +525,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optOrientation") as HTMLSelectElement).value = o.orientation;
   (byId("optGrouping") as HTMLSelectElement).value = o.grouping;
   (byId("optGap") as HTMLInputElement).value = String(Math.round(o.gap * 100));
+  (byId("optRefValue") as HTMLInputElement).value = o.referenceValue == null ? "" : String(o.referenceValue);
   (byId("optTotals") as HTMLInputElement).checked = o.showTotals;
   (byId("optLabels") as HTMLInputElement).checked = o.showValueLabels;
   (byId("optReverse") as HTMLInputElement).checked = o.reverseCategories;

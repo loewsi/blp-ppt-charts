@@ -182,6 +182,35 @@ describe("layoutBarColumn — negative values", () => {
   });
 });
 
+describe("layoutBarColumn — reference line", () => {
+  const isRef = (s: { meta?: { objectType?: string } }) => s.meta?.objectType === "valueLine";
+
+  it("draws no reference line by default", () => {
+    expect(layoutBarColumn(model({})).some(isRef)).toBe(false);
+  });
+
+  it("draws a horizontal line + label at the value for a column chart", () => {
+    const prims = layoutBarColumn(model({ referenceValue: 25, orientation: "column" }));
+    const line = prims.find((s) => s.kind === "line" && isRef(s));
+    expect(line && line.kind === "line" && Math.abs(line.y1 - line.y2) < 0.5).toBe(true); // horizontal
+    expect(prims.some((s) => s.kind === "text" && isRef(s))).toBe(true);
+  });
+
+  it("draws a vertical line for a bar chart", () => {
+    const prims = layoutBarColumn(model({ referenceValue: 25, orientation: "bar" }));
+    const line = prims.find((s) => s.kind === "line" && isRef(s));
+    expect(line && line.kind === "line" && Math.abs(line.x1 - line.x2) < 0.5).toBe(true); // vertical
+  });
+
+  it("skips a reference value outside the axis range", () => {
+    expect(layoutBarColumn(model({ referenceValue: 9999 })).some(isRef)).toBe(false);
+  });
+
+  it("skips reference lines on 100% stacked charts", () => {
+    expect(layoutBarColumn(model({ referenceValue: 0.5, grouping: "stacked100" })).some(isRef)).toBe(false);
+  });
+});
+
 describe("niceTicks", () => {
   it("returns [0] for non-positive max", () => {
     expect(niceTicks(0)).toEqual([0]);

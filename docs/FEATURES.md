@@ -65,7 +65,7 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - 🔵 Series connectors (stacked columns)  *(new)*
 - ⬜ Difference arrows (level & total, absolute & %)
 - ⬜ CAGR arrows (auto growth over a period)
-- ⬜ Value / reference lines
+- 🔵 Value / reference line (target line at a fixed value, labelled)  *(new)*
 - ⬜ Error bars / ranges
 
 ---
@@ -75,12 +75,12 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 ### Column / bar family
 - 🔵 Simple column, stacked, clustered, 100% stacked, horizontal bar
 - 🔵 Negative values below baseline  *(new)*
-- 🔵 Combination — one series as a line  *(new)*
+- ⬜ Combination — one series as a line
 - ⬜ Line markers, secondary axis; category gaps / visual grouping
 
 ### Waterfall
 - 🔵 Running totals, rise/fall bars, connectors, zero baseline, signed labels
-- 🔵 Subtotal / total columns anchored to baseline  *(new)*
+- ⬜ Subtotal / total columns anchored to baseline
 - ⬜ Bar (horizontal) orientation; per-bar color override
 
 ### Mekko / Marimekko — ⬜
@@ -98,4 +98,4 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ## Testing backlog (needs Silvan in PowerPoint)
 Everything marked 🔵 is unit-tested but not visually confirmed. Highest-value to verify first:
-waterfall render, negative values, connectors, legend positions, colors, resize/move, number formats.
+waterfall render, negative values, connectors, reference line, legend positions, colors, resize/move, number formats.

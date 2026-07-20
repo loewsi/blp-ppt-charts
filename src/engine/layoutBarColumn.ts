@@ -6,6 +6,7 @@ import { formatNumber, formatPercent } from "./format";
 const AXIS_COLOR = "#001C54";
 const GRID_COLOR = "#D7E2F4";
 const CONNECTOR_COLOR = "#9AA6BF";
+const REF_COLOR = "#E8412C";
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
 
@@ -343,6 +344,23 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   } else {
     const x0 = xv(0);
     prims.push({ kind: "line", x1: x0, y1: plotTop, x2: x0, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
+  }
+
+  // Reference/target line: a horizontal (column) or vertical (bar) marker at a
+  // fixed value, drawn on top of the bars with its value labelled at the end.
+  const rv = opt.referenceValue;
+  if (rv != null && isFinite(rv) && !norm100 && rv >= vMin && rv <= vMax) {
+    const text = formatNumber(rv, { ...nf, hideZero: false });
+    const tw = estTextW(text, 9);
+    if (isColumn) {
+      const y = yv(rv);
+      prims.push({ kind: "line", x1: plotLeft, y1: y, x2: plotLeft + plotW, y2: y, color: REF_COLOR, weight: 1.25, meta: { objectType: "valueLine" } });
+      prims.push({ kind: "text", x: plotLeft + plotW - tw, y: y - 15, w: tw, h: 14, text, color: REF_COLOR, size: 9, bold: true, align: "right", family: fam, meta: { objectType: "valueLine" } });
+    } else {
+      const x = xv(rv);
+      prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: REF_COLOR, weight: 1.25, meta: { objectType: "valueLine" } });
+      prims.push({ kind: "text", x: x - tw / 2, y: plotTop - 15, w: tw, h: 14, text, color: REF_COLOR, size: 9, bold: true, align: "center", family: fam, meta: { objectType: "valueLine" } });
+    }
   }
 
   if (opt.showLegend) drawLegend();
