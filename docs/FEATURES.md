@@ -94,8 +94,34 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - ⬜ Connector-controlled totals (choose where the total lands) — shared mechanic with CAGR from→to
 - ⬜ Bar (horizontal) orientation; per-bar color override
 
+### Line — ⬜
+- ⬜ Single/multi-series line; markers; value labels; connect-gaps; area fill option
+
+### Combination — ⬜
+- ⬜ Bars + one or more series drawn as a line (shares the column engine's axis)
+- ⬜ Secondary axis for the line series
+
+### Pie / doughnut — ⬜
+- ⬜ Single series → slices; % or value labels; doughnut hole size; leader lines; explode a slice
+
+### Scatter / bubble — ⬜
+- ⬜ XY scatter (x,y per point); bubble adds a size dimension; point labels; quadrant lines
+
 ### Mekko / Marimekko — ⬜
-### Pie / doughnut — ⬜ (only if wanted; outside the bar family)
+- ⬜ Variable column widths (weighted by a total) + 100% stacked segments
+
+---
+
+## Non-chart think-cell features
+
+### Agenda — ⬜
+- ⬜ Table-of-contents / agenda slides that auto-number and stay in sync across the deck;
+      current-chapter highlight; regenerate when sections change. (think-cell's "Agenda")
+
+### Standard slide elements — ⬜ (see "Where should slide elements live?" below)
+- ⬜ Harvey balls, checkmarks/crosses, stoplights, arrows/pointers, brackets, ticks
+- ⬜ Text boxes with the house style; process-flow / chevron shapes
+- ⬜ These overlap with the **QuickTools** VBA ribbon add-in — decide one home (discussion below)
 
 ---
 
