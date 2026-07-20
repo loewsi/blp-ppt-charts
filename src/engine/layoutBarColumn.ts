@@ -228,8 +228,10 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
               let cy = r.cy;
               const cur = isColumn ? cy : cx;
               if (Math.abs(cur - prevLabelC) < labelH) {
-                if (isColumn) cx += side * catThick * 0.42;
-                else cy += side * labelH * 0.9;
+                // Nudge just enough to clear the neighbour: half a label width.
+                const off = estTextW(text, opt.segmentFontSize) / 2 + 3;
+                if (isColumn) cx += side * off;
+                else cy += side * (labelH * 0.6);
                 side = -side;
               }
               pushChipLabel(cx, cy, catThick, text, data.series[si].color, m);

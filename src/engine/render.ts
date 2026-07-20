@@ -10,7 +10,10 @@ export async function drawChart(
   slide: PowerPoint.Slide,
   model: ChartModel
 ): Promise<void> {
-  const prims = computeLayout(model);
+  const raw = computeLayout(model);
+  // Create fills/lines first and text last, so every label sits in FRONT of the
+  // bars (z-order follows creation order within the group).
+  const prims = [...raw.filter((p) => p.kind !== "text"), ...raw.filter((p) => p.kind === "text")];
   const shapes = slide.shapes;
   const created = prims.map((p) => makeShape(shapes, p));
   await context.sync(); // shapes must exist before they can be grouped
