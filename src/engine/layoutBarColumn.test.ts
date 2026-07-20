@@ -162,6 +162,26 @@ describe("layoutBarColumn — small labels & fonts", () => {
   });
 });
 
+describe("layoutBarColumn — negative values", () => {
+  const withNeg = {
+    type: "barColumn" as const,
+    categories: ["A", "B"],
+    series: [{ name: "S", color: "#111", values: [10, -6] }],
+  };
+
+  it("renders a bar for a negative value (not dropped)", () => {
+    expect(segRects(layoutBarColumn(model({ grouping: "clustered" }, withNeg))).length).toBe(2);
+  });
+
+  it("places the negative bar below the zero baseline", () => {
+    const prims = layoutBarColumn(model({ grouping: "clustered" }, withNeg));
+    const baseline = prims.find((s) => s.kind === "line" && s.meta?.objectType === "baseline");
+    const baseY = baseline && baseline.kind === "line" ? baseline.y1 : 0;
+    const negBar = segRects(prims).find((r) => r.meta?.categoryIndex === 1)!;
+    expect(negBar.y).toBeGreaterThanOrEqual(baseY - 1);
+  });
+});
+
 describe("niceTicks", () => {
   it("returns [0] for non-positive max", () => {
     expect(niceTicks(0)).toEqual([0]);

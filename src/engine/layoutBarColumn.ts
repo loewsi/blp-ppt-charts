@@ -72,31 +72,59 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     data.series.reduce((s, se) => s + safe(se.values[ci]), 0)
   );
 
-  let maxVal: number;
-  if (norm100) maxVal = 1;
-  else if (stacked) maxVal = Math.max(1, ...totals);
-  else {
-    let m = 1;
-    for (const se of data.series) for (const v of se.values) m = Math.max(m, safe(v));
-    maxVal = m;
+  // Value-axis range, including negatives; zero may sit inside the plot.
+  let vMax: number;
+  let vMin = 0;
+  if (norm100) {
+    vMax = 1;
+  } else if (stacked) {
+    let pMax = 0;
+    let nMin = 0;
+    for (let ci = 0; ci < nCats; ci++) {
+      let p = 0;
+      let ng = 0;
+      for (const se of data.series) {
+        const v = safe(se.values[ci]);
+        if (v > 0) p += v;
+        else ng += v;
+      }
+      pMax = Math.max(pMax, p);
+      nMin = Math.min(nMin, ng);
+    }
+    vMax = Math.max(1, pMax);
+    vMin = Math.min(0, nMin);
+  } else {
+    let mx = 1;
+    let mn = 0;
+    for (const se of data.series)
+      for (const v of se.values) {
+        mx = Math.max(mx, safe(v));
+        mn = Math.min(mn, safe(v));
+      }
+    vMax = mx;
+    vMin = Math.min(0, mn);
   }
-  const valScale = valExtent / maxVal;
+  const vRange = vMax - vMin || 1;
+  const vScale = valExtent / vRange;
+  const yv = (v: number) => plotTop + (vMax - v) * vScale; // column: value -> y
+  const xv = (v: number) => plotLeft + (v - vMin) * vScale; // bar: value -> x
 
   // Emit a rectangle for a segment/bar; returns its center for label placement.
   function emitRect(catStart: number, thick: number, v0: number, v1: number, fill: string, meta: ShapeMeta) {
+    const lo = Math.min(v0, v1);
+    const hi = Math.max(v0, v1);
     if (isColumn) {
       const x = plotLeft + catStart;
-      const baseline = plotTop + plotH;
-      const y = baseline - v1 * valScale;
-      const h = (v1 - v0) * valScale;
-      prims.push({ kind: "rect", x, y, w: thick, h, fill, meta });
-      return { cx: x + thick / 2, cy: y + h / 2 };
+      const yTop = yv(hi);
+      const h = Math.max(0, yv(lo) - yTop);
+      prims.push({ kind: "rect", x, y: yTop, w: thick, h, fill, meta });
+      return { cx: x + thick / 2, cy: yTop + h / 2 };
     }
     const y = plotTop + catStart;
-    const x = plotLeft + v0 * valScale;
-    const w = (v1 - v0) * valScale;
-    prims.push({ kind: "rect", x, y, w, h: thick, fill, meta });
-    return { cx: x + w / 2, cy: y + thick / 2 };
+    const xL = xv(lo);
+    const w = Math.max(0, xv(hi) - xL);
+    prims.push({ kind: "rect", x: xL, y, w, h: thick, fill, meta });
+    return { cx: xL + w / 2, cy: y + thick / 2 };
   }
 
   const fam = opt.fontFamily;
@@ -124,12 +152,12 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     }
   }
 
-  function pushTotal(catStart: number, thick: number, stackPx: number, text: string, meta: ShapeMeta) {
+  function pushTotal(catStart: number, thick: number, topValue: number, text: string, meta: ShapeMeta) {
     if (isColumn) {
-      const y = plotTop + plotH - stackPx - 18;
+      const y = yv(topValue) - 18;
       prims.push({ kind: "text", x: plotLeft + catStart - 8, y, w: thick + 16, h: 16, text, color: LABEL_DARK, size: opt.totalFontSize, bold: true, align: "center", family: fam, meta });
     } else {
-      prims.push({ kind: "text", x: plotLeft + stackPx + 4, y: plotTop + catStart + thick / 2 - 8, w: PAD_MAIN + 26, h: 16, text, color: LABEL_DARK, size: opt.totalFontSize, bold: true, align: "left", family: fam, meta });
+      prims.push({ kind: "text", x: xv(topValue) + 4, y: plotTop + catStart + thick / 2 - 8, w: PAD_MAIN + 26, h: 16, text, color: LABEL_DARK, size: opt.totalFontSize, bold: true, align: "left", family: fam, meta });
     }
   }
 
@@ -147,18 +175,19 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   }
 
   function drawGridAxis() {
-    for (const t of niceTicks(maxVal, 4)) {
+    for (const t of axisTicks(vMin, vMax, 4)) {
+      const isZero = Math.abs(t) < 1e-9;
       if (isColumn) {
-        const y = plotTop + plotH - t * valScale;
-        if (opt.showGridlines && t > 0) {
+        const y = yv(t);
+        if (opt.showGridlines && !isZero) {
           prims.push({ kind: "line", x1: plotLeft, y1: y, x2: plotLeft + plotW, y2: y, color: GRID_COLOR, weight: 0.75, meta: { objectType: "gridline" } });
         }
         if (opt.showValueAxis) {
           prims.push({ kind: "text", x: box.left, y: y - 7, w: axisBand - 3, h: 14, text: axisText(t), color: LABEL_DARK, size: 8, bold: false, align: "right", family: fam, meta: { objectType: "valueAxis" } });
         }
       } else {
-        const x = plotLeft + t * valScale;
-        if (opt.showGridlines && t > 0) {
+        const x = xv(t);
+        if (opt.showGridlines && !isZero) {
           prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: GRID_COLOR, weight: 0.75, meta: { objectType: "gridline" } });
         }
         if (opt.showValueAxis) {
@@ -205,12 +234,24 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     let side = 1; // alternates the collision offset left/right (or up/down)
 
     if (stacked) {
-      let cum = 0;
+      let cumPos = 0;
+      let cumNeg = 0;
       for (let si = 0; si < nSer; si++) {
         const raw = safe(data.series[si].values[ci]);
         const v = norm100 ? (total === 0 ? 0 : raw / total) : raw;
-        if (v <= 0) continue;
-        const r = emitRect(slotStart, catThick, cum, cum + v, data.series[si].color, {
+        if (v === 0) continue;
+        let seg0: number;
+        let seg1: number;
+        if (v > 0) {
+          seg0 = cumPos;
+          seg1 = cumPos + v;
+          cumPos += v;
+        } else {
+          seg0 = cumNeg + v; // extends below the running negative total
+          seg1 = cumNeg;
+          cumNeg += v;
+        }
+        const r = emitRect(slotStart, catThick, seg0, seg1, data.series[si].color, {
           objectType: "segment",
           seriesIndex: si,
           categoryIndex: ci,
@@ -218,8 +259,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         if (opt.showValueLabels) {
           const text = norm100 ? formatPercent(raw, total, nf.decimals) : formatNumber(raw, nf);
           const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
+          const segPx = Math.abs(v) * vScale;
           if (text) {
-            if (v * valScale >= MIN_SEG_FOR_LABEL) {
+            if (segPx >= MIN_SEG_FOR_LABEL) {
               pushCenteredLabel(r.cx, r.cy, catThick, text, m);
               prevLabelC = isColumn ? r.cy : r.cx;
             } else if (opt.labelOverflow === "outside") {
@@ -230,7 +272,6 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
               let cy = r.cy;
               const cur = isColumn ? cy : cx;
               if (Math.abs(cur - prevLabelC) < labelH) {
-                // Nudge just enough to clear the neighbour: half a label width.
                 const off = estTextW(text, opt.segmentFontSize) / 2 + 3;
                 if (isColumn) cx += side * off;
                 else cy += side * (labelH * 0.6);
@@ -241,17 +282,16 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
             }
           }
         }
-        cum += v;
       }
       if (opt.showTotals && !norm100) {
         const text = formatNumber(total, nf);
-        if (text) pushTotal(slotStart, catThick, total * valScale, text, { objectType: "totalLabel", categoryIndex: ci });
+        if (text) pushTotal(slotStart, catThick, Math.max(cumPos, 0), text, { objectType: "totalLabel", categoryIndex: ci });
       }
     } else {
       const laneThick = catThick / nSer;
       for (let si = 0; si < nSer; si++) {
         const raw = safe(data.series[si].values[ci]);
-        if (raw <= 0) continue;
+        if (raw === 0) continue;
         const r = emitRect(slotStart + si * laneThick, laneThick, 0, raw, data.series[si].color, {
           objectType: "segment",
           seriesIndex: si,
@@ -261,7 +301,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           const text = formatNumber(raw, nf);
           const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
           if (text) {
-            if (raw * valScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
+            if (Math.abs(raw) * vScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
             else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, laneThick / 2, text, m);
             else pushChipLabel(r.cx, r.cy, laneThick, text, data.series[si].color, m);
           }
@@ -289,8 +329,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         const rawB = safe(data.series[si].values[ciB]);
         cumA += norm100 ? (totA === 0 ? 0 : rawA / totA) : rawA;
         cumB += norm100 ? (totB === 0 ? 0 : rawB / totB) : rawB;
-        const ya = plotTop + plotH - cumA * valScale;
-        const yb = plotTop + plotH - cumB * valScale;
+        const ya = yv(cumA);
+        const yb = yv(cumB);
         prims.push({ kind: "line", x1: aRight, y1: ya, x2: bLeft, y2: yb, color: CONNECTOR_COLOR, weight: 0.75, meta: { objectType: "connector", categoryIndex: k } });
       }
     }
@@ -298,10 +338,11 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
 
   const baselineMeta: ShapeMeta = { objectType: "baseline" };
   if (isColumn) {
-    const baseline = plotTop + plotH;
-    prims.push({ kind: "line", x1: plotLeft, y1: baseline, x2: plotLeft + plotW, y2: baseline, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
+    const y0 = yv(0);
+    prims.push({ kind: "line", x1: plotLeft, y1: y0, x2: plotLeft + plotW, y2: y0, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
   } else {
-    prims.push({ kind: "line", x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
+    const x0 = xv(0);
+    prims.push({ kind: "line", x1: x0, y1: plotTop, x2: x0, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
   }
 
   if (opt.showLegend) drawLegend();
@@ -318,6 +359,19 @@ export function niceTicks(max: number, target = 4): number[] {
   const step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
   const ticks: number[] = [];
   for (let t = 0; t <= max + step * 1e-9; t += step) ticks.push(Number(t.toFixed(10)));
+  return ticks;
+}
+
+/** Nice ticks covering [min, max], always including 0 when the range spans it. */
+export function axisTicks(min: number, max: number, target = 4): number[] {
+  const span = max - min || 1;
+  const raw = span / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+  const ticks: number[] = [];
+  const start = Math.ceil(min / step - 1e-9) * step;
+  for (let t = start; t <= max + step * 1e-9; t += step) ticks.push(Number(t.toFixed(10)));
   return ticks;
 }
 
