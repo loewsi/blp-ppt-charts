@@ -35,7 +35,8 @@ describe("formatNumber", () => {
   });
 
   it("groups thousands when enabled", () => {
-    expect(formatNumber(1234567, { ...base, thousandsSep: true })).toMatch(/^1[.,\s]234[.,\s]567$/);
+    // Separator is locale-specific (comma, dot, space, or apostrophe in de-CH).
+    expect(formatNumber(1234567, { ...base, thousandsSep: true })).toMatch(/^1\D234\D567$/);
   });
 
   it("shows negatives with a minus by default", () => {
