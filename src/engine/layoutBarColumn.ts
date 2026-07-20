@@ -99,10 +99,18 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   }
 
   const fam = opt.fontFamily;
+  const labelH = opt.segmentFontSize + 5; // approx label box height for collision checks
 
   function pushCenteredLabel(cx: number, cy: number, thick: number, text: string, meta: ShapeMeta) {
     const w = Math.max(isColumn ? thick : 64, MIN_LABEL_W); // min box width; centered on (cx, cy)
     prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
+  }
+
+  // Small segment, kept inside: a chip filled with the segment color so the
+  // white value stays readable even when nudged off-center to dodge a neighbour.
+  function pushChipLabel(cx: number, cy: number, thick: number, text: string, fill: string, meta: ShapeMeta) {
+    const w = Math.max(isColumn ? thick : 64, MIN_LABEL_W);
+    prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, bg: fill, meta });
   }
 
   // Small segment: put the value just outside the column/bar instead of hiding it.
@@ -190,6 +198,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     const ci = order[k];
     const slotStart = k * slot + (slot - catThick) / 2;
     const total = totals[ci] || 0;
+    let prevLabelC = -Infinity; // center of the last placed small label (along value axis)
+    let side = 1; // alternates the collision offset left/right (or up/down)
 
     if (stacked) {
       let cum = 0;
@@ -206,8 +216,24 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           const text = norm100 ? formatPercent(raw, total, nf.decimals) : formatNumber(raw, nf);
           const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
           if (text) {
-            if (v * valScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, catThick, text, m);
-            else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, catThick / 2, text, m);
+            if (v * valScale >= MIN_SEG_FOR_LABEL) {
+              pushCenteredLabel(r.cx, r.cy, catThick, text, m);
+              prevLabelC = isColumn ? r.cy : r.cx;
+            } else if (opt.labelOverflow === "outside") {
+              pushOutsideLabel(r.cx, r.cy, catThick / 2, text, m);
+            } else {
+              // keep inside: chip + nudge off-center when it collides with the last one
+              let cx = r.cx;
+              let cy = r.cy;
+              const cur = isColumn ? cy : cx;
+              if (Math.abs(cur - prevLabelC) < labelH) {
+                if (isColumn) cx += side * catThick * 0.42;
+                else cy += side * labelH * 0.9;
+                side = -side;
+              }
+              pushChipLabel(cx, cy, catThick, text, data.series[si].color, m);
+              prevLabelC = cur;
+            }
           }
         }
         cum += v;
@@ -232,6 +258,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           if (text) {
             if (raw * valScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
             else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, laneThick / 2, text, m);
+            else pushChipLabel(r.cx, r.cy, laneThick, text, data.series[si].color, m);
           }
         }
       }

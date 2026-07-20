@@ -41,7 +41,7 @@ export interface ChartOptions {
   legendPosition: "top" | "bottom" | "left" | "right";
   showGridlines: boolean; // value-axis gridlines across the plot
   showValueAxis: boolean; // value-axis tick labels
-  labelOverflow: "hide" | "outside"; // small-segment labels: hide, or place outside
+  labelOverflow: "inside" | "outside"; // small-segment labels: keep inside (chip + offset) or place outside
   fontFamily: string; // font for all labels
   segmentFontSize: number; // pt, segment/value labels
   totalFontSize: number; // pt, total labels
@@ -112,7 +112,7 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   legendPosition: "bottom",
   showGridlines: false,
   showValueAxis: false,
-  labelOverflow: "outside",
+  labelOverflow: "inside",
   fontFamily: "Roboto",
   segmentFontSize: 9,
   totalFontSize: 10,

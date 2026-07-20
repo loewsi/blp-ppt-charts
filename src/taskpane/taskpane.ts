@@ -23,6 +23,8 @@ import {
   getSlideCharts,
   getSelectedChartId,
   getChartBox,
+  getPartBox,
+  translatePart,
 } from "../engine/persistence";
 import { newId } from "../util/id";
 import { mountGrid, setGridData, getGridData, setSeriesColor } from "./grid";
@@ -34,6 +36,14 @@ let currentId: string | null = null; // null => "insert new" mode
 let currentName = "";
 let cachedModels: ChartModel[] = [];
 let busy = false; // guards against the selection handler firing during our own edits
+let applyTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Debounced live apply: any edit re-renders the current chart automatically. */
+function scheduleApply(): void {
+  if (!currentId) return;
+  if (applyTimer) clearTimeout(applyTimer);
+  applyTimer = setTimeout(() => void guard(updateChart), 400);
+}
 
 // ---- boot ----------------------------------------------------------------
 Office.onReady((info) => {
@@ -46,6 +56,7 @@ Office.onReady((info) => {
   mountGrid(byId("grid"), () => {
     currentData = getGridData();
     renderSeriesColors();
+    scheduleApply();
   });
   setOptionsUI(defaultOptions());
   renderGrid();
@@ -70,7 +81,6 @@ let lastPolled: ChartBox | null = null;
 
 async function pollResize(): Promise<void> {
   if (busy || !currentId) return;
-  if (!(byId("optAutoResize") as HTMLInputElement).checked) return;
   let box: ChartBox | null = null;
   try {
     box = await withSlide((ctx, slide) => getChartBox(ctx, slide, currentId!));
@@ -115,10 +125,15 @@ function show(which: "app" | "unsupported"): void {
   byId(which).hidden = false;
 }
 
+const OPTION_IDS = [
+  "optOrientation", "optGrouping", "optGap", "optTotals", "optLabels", "optReverse",
+  "optLegend", "legendPosition", "optGridlines", "optAxis", "labelOverflow",
+  "fontFamily", "segFontSize", "totFontSize",
+  "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
+];
+
 function wire(): void {
   byId("insertBtn").addEventListener("click", () => guard(insertChart));
-  byId("updateBtn").addEventListener("click", () => guard(updateChart));
-  byId("newBtn").addEventListener("click", () => resetToNew());
   byId("editSelectedBtn").addEventListener("click", () => guard(editSelected));
   byId("refreshBtn").addEventListener("click", () => guard(refreshList));
   byId("loadBtn").addEventListener("click", () => guard(loadSelected));
@@ -129,6 +144,8 @@ function wire(): void {
   byId("transposeBtn").addEventListener("click", () => transpose());
   byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
   byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
+  // Live apply: changing any style/format control re-renders the current chart.
+  OPTION_IDS.forEach((id) => byId(id).addEventListener("change", () => scheduleApply()));
 }
 
 // ---- grid bridge ---------------------------------------------------------
@@ -152,7 +169,8 @@ function renderSeriesColors(): void {
       setSeriesColor(i, sw.value);
       currentData = readGrid();
       renderSeriesColors();
-      status("Color changed — Update the chart to apply it on the slide.");
+      scheduleApply();
+      status("Color changed.");
     });
     const name = document.createElement("span");
     name.textContent = s.name;
@@ -177,6 +195,7 @@ function addSeries(): void {
     values: currentData.categories.map(() => 0),
   });
   renderGrid();
+  scheduleApply();
 }
 
 function removeSeries(): void {
@@ -184,6 +203,7 @@ function removeSeries(): void {
   if (currentData.series.length <= 1) return;
   currentData.series.pop();
   renderGrid();
+  scheduleApply();
 }
 
 function addCategory(): void {
@@ -191,6 +211,7 @@ function addCategory(): void {
   currentData.categories.push(`Cat ${currentData.categories.length + 1}`);
   currentData.series.forEach((s) => s.values.push(0));
   renderGrid();
+  scheduleApply();
 }
 
 function removeCategory(): void {
@@ -199,6 +220,7 @@ function removeCategory(): void {
   currentData.categories.pop();
   currentData.series.forEach((s) => s.values.pop());
   renderGrid();
+  scheduleApply();
 }
 
 function transpose(): void {
@@ -211,6 +233,7 @@ function transpose(): void {
   }));
   currentData = { type: "barColumn", categories: newCategories, series: newSeries };
   renderGrid();
+  scheduleApply();
 }
 
 async function applyColors(): Promise<void> {
@@ -230,7 +253,8 @@ async function applyColors(): Promise<void> {
     s.color = palette[i % palette.length];
   });
   renderGrid();
-  status(`Applied ${scheme} colors. Insert or Update to apply on the slide.`);
+  scheduleApply();
+  status(`Applied ${scheme} colors.`);
 }
 
 // ---- paste fallback (RevoGrid also pastes natively into cells) -----------
@@ -246,8 +270,9 @@ function loadPasted(): void {
   ta.value = "";
   const details = byId("pasteArea").closest("details");
   if (details) (details as HTMLDetailsElement).open = false;
+  scheduleApply();
   status(
-    `Loaded ${parsed.categories.length} categories × ${parsed.series.length} series. Review, then Insert or Update.`
+    `Loaded ${parsed.categories.length} categories × ${parsed.series.length} series.`
   );
 }
 
@@ -273,8 +298,14 @@ function parsePasted(text: string): ChartData | null {
 
 // ---- PowerPoint operations ----------------------------------------------
 async function insertChart(): Promise<void> {
+  // Always start a fresh default chart; edits then apply live. Duplicate an
+  // existing chart by copy-pasting it on the slide.
+  currentData = defaultData();
+  currentName = "";
+  currentId = null;
+  setOptionsUI(defaultOptions());
+  renderGrid();
   const data = readGrid();
-  if (!validate(data)) return;
   const box: ChartBox = { ...DEFAULT_BOX };
   busy = true;
   try {
@@ -299,7 +330,7 @@ async function insertChart(): Promise<void> {
   currentData = data;
   currentBox = box;
   setMode();
-  status(`Inserted ${currentName}.`);
+  status(`Inserted ${currentName}. Edit anything — it updates live.`);
 }
 
 async function updateChart(): Promise<void> {
@@ -309,8 +340,11 @@ async function updateChart(): Promise<void> {
   busy = true;
   try {
     await withSlide(async (context, slide) => {
-      const liveBox = await getChartBox(context, slide, currentId!);
+      const opts = readOptions();
+      const liveBox = await getChartBox(context, slide, currentId!); // respects moves/resizes
       const box = liveBox ?? currentBox;
+      // Remember where the legend sits, so a redraw doesn't snap it back to default.
+      const savedLegend = opts.showLegend ? await getPartBox(context, slide, currentId!, "legend") : null;
       await deleteChart(context, slide, currentId!);
       const model: ChartModel = {
         id: currentId!,
@@ -318,16 +352,21 @@ async function updateChart(): Promise<void> {
         name: currentName || "Chart",
         data,
         box,
-        options: readOptions(),
+        options: opts,
       };
       await drawChart(context, slide, model);
       currentBox = box;
+      if (savedLegend) {
+        const nowLegend = await getPartBox(context, slide, currentId!, "legend");
+        if (nowLegend) {
+          await translatePart(context, slide, currentId!, "legend", savedLegend.left - nowLegend.left, savedLegend.top - nowLegend.top);
+        }
+      }
     });
   } finally {
     busy = false;
   }
   currentData = data;
-  status(`Updated ${currentName || "chart"}.`);
 }
 
 async function editSelected(): Promise<void> {
@@ -374,17 +413,6 @@ function loadSelected(): void {
   status(`Editing ${model.name || "chart"}.`);
 }
 
-function resetToNew(): void {
-  currentData = defaultData();
-  currentBox = { ...DEFAULT_BOX };
-  currentId = null;
-  currentName = "";
-  setOptionsUI(defaultOptions());
-  renderGrid();
-  setMode();
-  status("New chart. Edit values, then Insert.");
-}
-
 function applyModel(model: ChartModel): void {
   currentData = model.data;
   currentBox = model.box;
@@ -427,13 +455,12 @@ function validate(data: ChartData): boolean {
 }
 
 function setMode(): void {
-  (byId("updateBtn") as HTMLButtonElement).disabled = currentId === null;
   const badge = byId("editing");
   if (currentId) {
-    badge.textContent = `Editing: ${currentName || "chart"}`;
+    badge.textContent = `Editing: ${currentName || "chart"} — changes apply live`;
     badge.className = "editing on";
   } else {
-    badge.textContent = "New chart — not inserted yet";
+    badge.textContent = "No chart selected — click a chart, or Insert one";
     badge.className = "editing";
   }
 }
@@ -476,7 +503,7 @@ function readOptions(): ChartOptions {
     legendPosition: v("legendPosition") as "top" | "bottom" | "left" | "right",
     showGridlines: c("optGridlines"),
     showValueAxis: c("optAxis"),
-    labelOverflow: v("labelOverflow") as "hide" | "outside",
+    labelOverflow: v("labelOverflow") as "inside" | "outside",
     fontFamily: v("fontFamily"),
     segmentFontSize: clampInt(Number(v("segFontSize")), 6, 24),
     totalFontSize: clampInt(Number(v("totFontSize")), 6, 24),

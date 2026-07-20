@@ -106,7 +106,8 @@ function makeShape(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint
 
   // text
   const s = shapes.addTextBox(p.text, { left: p.x, top: p.y, width: p.w, height: p.h });
-  s.fill.clear();
+  if (p.bg) s.fill.setSolidColor(p.bg);
+  else s.fill.clear();
   s.lineFormat.visible = false;
   const tf = s.textFrame;
   tf.topMargin = 0;

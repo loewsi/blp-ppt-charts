@@ -70,6 +70,70 @@ export async function getChartBox(
   return { left, top, width: right - left, height: bottom - top };
 }
 
+/** Bounding box of the shapes of a chart belonging to a given part ("chart"|"legend"). */
+export async function getPartBox(
+  context: PowerPoint.RequestContext,
+  slide: PowerPoint.Slide,
+  id: string,
+  part: string
+): Promise<ChartBox | null> {
+  const shapes = slide.shapes;
+  shapes.load("items");
+  await context.sync();
+  const probes = shapes.items.map((s) => {
+    const tagId = s.tags.getItemOrNullObject(TAG_ID);
+    const tagPart = s.tags.getItemOrNullObject(TAG_PART);
+    tagId.load("value, isNullObject");
+    tagPart.load("value, isNullObject");
+    s.load("left, top, width, height");
+    return { s, tagId, tagPart };
+  });
+  await context.sync();
+  const mine = probes.filter(
+    (p) => !p.tagId.isNullObject && p.tagId.value === id && !p.tagPart.isNullObject && p.tagPart.value === part
+  );
+  if (mine.length === 0) return null;
+  let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+  for (const { s } of mine) {
+    left = Math.min(left, s.left);
+    top = Math.min(top, s.top);
+    right = Math.max(right, s.left + s.width);
+    bottom = Math.max(bottom, s.top + s.height);
+  }
+  return { left, top, width: right - left, height: bottom - top };
+}
+
+/** Shift all shapes of a chart part by (dx, dy) — used to restore a moved legend. */
+export async function translatePart(
+  context: PowerPoint.RequestContext,
+  slide: PowerPoint.Slide,
+  id: string,
+  part: string,
+  dx: number,
+  dy: number
+): Promise<void> {
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+  const shapes = slide.shapes;
+  shapes.load("items");
+  await context.sync();
+  const probes = shapes.items.map((s) => {
+    const tagId = s.tags.getItemOrNullObject(TAG_ID);
+    const tagPart = s.tags.getItemOrNullObject(TAG_PART);
+    tagId.load("value, isNullObject");
+    tagPart.load("value, isNullObject");
+    s.load("left, top");
+    return { s, tagId, tagPart };
+  });
+  await context.sync();
+  for (const { s, tagId, tagPart } of probes) {
+    if (!tagId.isNullObject && tagId.value === id && !tagPart.isNullObject && tagPart.value === part) {
+      s.left += dx;
+      s.top += dy;
+    }
+  }
+  await context.sync();
+}
+
 /** Read the chart id of whatever is selected on the slide (group or shape), or null. */
 export async function getSelectedChartId(
   context: PowerPoint.RequestContext

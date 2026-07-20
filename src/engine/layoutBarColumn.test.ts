@@ -133,12 +133,16 @@ describe("layoutBarColumn — small labels & fonts", () => {
   const segLabels = (p: ReturnType<typeof layoutBarColumn>) =>
     p.filter((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "segmentLabel");
 
-  it("places a small segment's label outside when labelOverflow=outside", () => {
-    expect(segLabels(layoutBarColumn(model({ labelOverflow: "outside" }, small))).length).toBe(2);
+  it("keeps a small label inside as a segment-colored chip", () => {
+    const labels = segLabels(layoutBarColumn(model({ labelOverflow: "inside" }, small)));
+    expect(labels.length).toBe(2);
+    expect(labels.find((l) => l.bg)?.bg).toBe("#222"); // small S2 gets a chip in its color
   });
 
-  it("hides small labels when labelOverflow=hide", () => {
-    expect(segLabels(layoutBarColumn(model({ labelOverflow: "hide" }, small))).length).toBe(1);
+  it("moves a small label outside (no chip) when labelOverflow=outside", () => {
+    const labels = segLabels(layoutBarColumn(model({ labelOverflow: "outside" }, small)));
+    expect(labels.length).toBe(2);
+    expect(labels.some((l) => l.bg)).toBe(false);
   });
 
   it("applies font family and per-type sizes", () => {

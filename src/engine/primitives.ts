@@ -51,6 +51,7 @@ export interface TextPrimitive {
   bold: boolean;
   align: Align;
   family?: string; // font family; defaults to Roboto in the adapter
+  bg?: string; // optional background fill (e.g. segment color behind a small label)
   meta?: ShapeMeta;
 }
 

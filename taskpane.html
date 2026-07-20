@@ -112,8 +112,8 @@
           </label>
           <label>Small labels
             <select id="labelOverflow">
-              <option value="outside">Show outside</option>
-              <option value="hide">Hide</option>
+              <option value="inside">Keep inside</option>
+              <option value="outside">Move outside</option>
             </select>
           </label>
           <label>Segment size <input id="segFontSize" type="number" min="6" max="24" step="1" value="9" /></label>
@@ -134,11 +134,9 @@
       </section>
 
       <section class="panel actions">
-        <button id="insertBtn" class="primary">Insert new chart</button>
-        <button id="updateBtn" class="primary" disabled>Update this chart</button>
-        <button id="newBtn" class="ghost">New</button>
+        <button id="insertBtn" class="primary wide">Insert chart</button>
       </section>
-      <label class="chk auto"><input id="optAutoResize" type="checkbox" /> Auto-fit chart after you resize it (beta)</label>
+      <p class="hint">Edits apply live to the selected chart. Duplicate a chart by copy-pasting it on the slide.</p>
 
       <p id="status" class="status"></p>
     </main>
