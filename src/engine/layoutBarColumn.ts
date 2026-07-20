@@ -177,16 +177,16 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       let x = box.left + Math.max(0, (box.width - total) / 2);
       const y = legendPos === "top" ? box.top + 4 : box.top + box.height - legendH + 6;
       data.series.forEach((s, i) => {
-        prims.push({ kind: "rect", x, y: y + 1, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-        prims.push({ kind: "text", x: x + sw + gapx, y: y - 3, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
         x += widths[i] + itemGap;
       });
     } else {
       const x = legendPos === "left" ? box.left + 4 : box.left + box.width - legendW + 4;
       let y = plotTop;
       data.series.forEach((s, i) => {
-        prims.push({ kind: "rect", x, y: y + 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-        prims.push({ kind: "text", x: x + sw + gapx, y: y - 1, w: Math.min(legendW - sw - gapx - 4, textWs[i]), h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y: y + 1, w: Math.min(legendW - sw - gapx - 4, textWs[i]), h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
         y += 16;
       });
     }
