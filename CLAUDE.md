@@ -12,7 +12,10 @@ UserForms/ribbons don't exist on Mac.
 - **v1 = stacked column.** **Waterfall is the eventual goal** — architecture is built for it.
 - **Behaviour = live-linked:** model is JSON-stamped on a shape tag (`BLPCHARTMODEL`),
   saved in the `.pptx`. Update = read model → delete tagged shapes → redraw.
-- **Deploy = shared-folder catalog** (internal, no AppSource).
+- **Deploy = GitHub Pages** (`https://loewsi.github.io/blp-ppt-charts/`, auto-deploys on push to
+  `main` via `.github/workflows/deploy.yml`). Sideload from the shared-folder catalog for testing.
+  Shared-runtime ribbon/auto-pane is reverted for now (trusted-catalog sideload didn't list it) —
+  code paths are guarded no-ops; revisit with central deploy / AppSource.
 
 ## Architecture (extensibility is the whole point)
 `taskpane.ts` (grid UI) → `ChartModel` → `layout.ts` registry → a `layout*.ts` returns a
@@ -24,10 +27,16 @@ generic `Primitive[]` (rect/text/line) → `render.ts` draws native shapes + tag
 labels — reuses the same primitives), register it in `layout.ts`. **`render.ts` and
 `persistence.ts` don't change.** Then let the task pane pick a chart type.
 
-## Status
-- Scaffold complete; `npm run build` (tsc + vite) is **green**; dev server serves 200 over HTTPS.
-- **Not yet runtime-verified inside PowerPoint** — nothing here can drive PowerPoint, so
-  Silvan verifies live behaviour (same constraint as QuickTools).
+## Status (updated 2026-07-20)
+- `npm run build` green; 59 unit tests pass (`npx vitest run`). Live deploy verified serving latest.
+- **Two chart families shipped:** column/bar (stacked/clustered/100%/horizontal, negatives,
+  connectors, reference line, manual axis min/max, number formats, legend, gridlines/axis) and
+  **waterfall** (running totals, rise/fall, connectors, signed labels).
+- **`docs/FEATURES.md`** = the living status list (✅ tested / 🔵 built-not-verified / ⬜ open).
+  **`docs/TESTING.md`** = the PowerPoint checklist for Silvan to flip 🔵 → ✅.
+- **Blind-rendering constraint:** Claude can't see rendered charts; everything 🔵 is unit-tested
+  only. Verify in PowerPoint before trusting visuals. (An earlier over-claim — marking combination
+  line + waterfall subtotals as built when they weren't — is why FEATURES.md is now kept honest.)
 
 ## Watch-outs / open risks (verify in-app)
 - `getSelectedSlides()` needs a recent host build; falls back to slide 1.
@@ -39,7 +48,14 @@ labels — reuses the same primitives), register it in `layout.ts`. **`render.ts
 - **Location**: `C:\Users\silva\dev\blp-ppt-charts` — moved out of OneDrive (git + OneDrive risks corruption). GitHub is the backup.
 
 ## Next steps
-1. Runtime-verify insert/update/load in PowerPoint (Windows first, then Mac).
-2. Real hosting for `dist/` (SharePoint/Azure) + repoint manifest for cross-machine use.
-3. Polish stacked column (legend, number formatting options, chart resize handling).
-4. Implement **waterfall** per the recipe above.
+1. **Silvan: walk `docs/TESTING.md` in PowerPoint** and report — that unblocks flipping the 🔵
+   backlog to ✅ and tells us what actually looks wrong.
+2. **Difference & CAGR arrows** (think-cell signature, next in FEATURES.md order). Needs two
+   things first: a real arrowhead in `render.ts` (today lines become plain rotated rects — no
+   head; add `LineFormat` arrowhead styling on a genuine line/connector shape) and a decision on
+   which points to compare (sensible default: first ↔ last category total, toggleable).
+3. **Combination line series** — add `Series.kind: "bar" | "line"`; line series excluded from
+   stacking/totals, folded into the axis range, drawn as a polyline+markers. Column orientation
+   first. Diagonal-line rendering (rotated rect) already supports the segments.
+4. Per-segment color override / single-bar highlight; waterfall subtotal columns; error bars.
+5. Cross-machine + Mac verification; real BLP icons (still placeholders in `public/assets/`).
