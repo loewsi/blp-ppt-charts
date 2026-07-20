@@ -124,6 +124,7 @@ function makeShape(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint
   tr.font.color = p.color;
   tr.font.name = p.family ?? "Roboto";
   tr.paragraphFormat.horizontalAlignment = hAlign(p.align);
+  if (p.autofit) tf.autoSizeSetting = "AutoSizeShapeToFitText"; // box hugs the text exactly
   return s;
 }
 

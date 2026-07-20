@@ -137,15 +137,25 @@ async function pollResize(): Promise<void> {
     return;
   }
   if (!box) return;
-  // Compare against what WE last rendered (not the model box) so normal edits
-  // don't look like resizes and we never drift/shrink.
   if (!lastRenderedBox) {
     lastRenderedBox = box;
     return;
   }
-  if (sameBox(box, lastRenderedBox)) return; // no resize since our last draw
-  if (!lastPolled || !sameBox(box, lastPolled)) {
-    lastPolled = box; // still dragging — wait for it to settle
+  // Only a SIZE change is a resize. A move (same size, different position) must
+  // NOT re-render — just shift the model box by the same delta so later edits
+  // redraw in place.
+  if (sameSize(box, lastRenderedBox)) {
+    currentBox = {
+      left: currentBox.left + (box.left - lastRenderedBox.left),
+      top: currentBox.top + (box.top - lastRenderedBox.top),
+      width: currentBox.width,
+      height: currentBox.height,
+    };
+    lastRenderedBox = box;
+    return;
+  }
+  if (!lastPolled || !sameSize(box, lastPolled)) {
+    lastPolled = box; // still dragging — wait for the size to settle
     return;
   }
   if (performance.now() - lastResizeApplyMs < 2500) return; // safety: at most once / 2.5s
@@ -155,14 +165,9 @@ async function pollResize(): Promise<void> {
   await updateChart(); // redraws at currentBox and refreshes lastRenderedBox
 }
 
-function sameBox(a: ChartBox, b: ChartBox): boolean {
+function sameSize(a: ChartBox, b: ChartBox): boolean {
   // 3pt tolerance so sub-point jitter never reads as a resize.
-  return (
-    Math.abs(a.left - b.left) < 3 &&
-    Math.abs(a.top - b.top) < 3 &&
-    Math.abs(a.width - b.width) < 3 &&
-    Math.abs(a.height - b.height) < 3
-  );
+  return Math.abs(a.width - b.width) < 3 && Math.abs(a.height - b.height) < 3;
 }
 
 async function onSelectionChanged(): Promise<void> {

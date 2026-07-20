@@ -58,8 +58,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
 
   const plotLeft = box.left + insLeft;
   const plotTop = box.top + insTop;
-  const plotW = box.width - insLeft - insRight;
-  const plotH = box.height - insTop - insBottom;
+  // Clamp so a very small box still yields positive geometry (chart stays visible).
+  const plotW = Math.max(24, box.width - insLeft - insRight);
+  const plotH = Math.max(24, box.height - insTop - insBottom);
 
   const catExtent = isColumn ? plotW : plotH;
   const valExtent = isColumn ? plotH : plotW;
@@ -178,7 +179,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const y = legendPos === "top" ? box.top + 4 : box.top + box.height - legendH + 6;
       data.series.forEach((s, i) => {
         prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-        prims.push({ kind: "text", x: x + sw + gapx, y, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, autofit: true, meta: { objectType: "legend", seriesIndex: i } });
         x += widths[i] + itemGap;
       });
     } else {
@@ -186,7 +187,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       let y = plotTop;
       data.series.forEach((s, i) => {
         prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-        prims.push({ kind: "text", x: x + sw + gapx, y: y + 1, w: Math.min(legendW - sw - gapx - 4, textWs[i]), h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y: y + 1, w: Math.min(legendW - sw - gapx - 4, textWs[i]), h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, autofit: true, meta: { objectType: "legend", seriesIndex: i } });
         y += 16;
       });
     }

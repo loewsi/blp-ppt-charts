@@ -52,6 +52,7 @@ export interface TextPrimitive {
   align: Align;
   family?: string; // font family; defaults to Roboto in the adapter
   bg?: string; // optional background fill (e.g. segment color behind a small label)
+  autofit?: boolean; // let PowerPoint size the box to the text (used for legend)
   meta?: ShapeMeta;
 }
 
