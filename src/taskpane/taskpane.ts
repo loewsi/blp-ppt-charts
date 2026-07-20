@@ -25,6 +25,7 @@ import {
   getChartBox,
   getPartBox,
   translatePart,
+  repairDuplicateChartIds,
 } from "../engine/persistence";
 import { newId } from "../util/id";
 import { mountGrid, setGridData, getGridData, setSeriesColor, getActive } from "./grid";
@@ -174,6 +175,9 @@ async function onSelectionChanged(): Promise<void> {
   if (busy) return;
   try {
     await withSlide(async (context, slide) => {
+      // A same-slide copy-paste clones the chart id; split the copy off first so
+      // it becomes an independent chart before we try to load the selection.
+      await repairDuplicateChartIds(context, slide);
       const id = await getSelectedChartId(context);
       if (!id) {
         // Clicked away from any chart → drop back to "no chart selected".

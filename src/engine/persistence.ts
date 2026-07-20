@@ -1,6 +1,116 @@
 import type { ChartModel, ChartBox } from "../model/chartModel";
 import { normalizeModel } from "../model/chartModel";
+import { newId } from "../util/id";
 import { TAG_ID, TAG_MODEL, TAG_PART } from "./tags";
+
+// ---- duplicate-id repair (same-slide copy-paste) -------------------------
+// A copy-paste clones a chart's group(s) with the SAME id, so editing one would
+// delete both. We detect ids that carry more than one "anchor" (a group holding
+// the model) and split the extras onto fresh ids, pairing each with its nearest
+// legend group so a pasted chart becomes independently editable.
+
+export interface RepairEntry {
+  id: string;
+  hasModel: boolean; // true for the chart's anchor group (carries TAG_MODEL)
+  part: string | null; // "chart" | "legend" | null
+  cx: number; // shape center, for pairing a legend to its chart
+  cy: number;
+}
+
+export interface RepairAssignment {
+  anchorIndex: number; // entry to receive a new id
+  legendIndex: number | null; // its paired legend entry, if any
+}
+
+/** Pure: decide which duplicated anchors need a fresh id and which legend goes with each. */
+export function planDuplicateRepair(entries: RepairEntry[]): RepairAssignment[] {
+  const byId = new Map<string, number[]>();
+  entries.forEach((e, i) => {
+    const arr = byId.get(e.id) ?? [];
+    arr.push(i);
+    byId.set(e.id, arr);
+  });
+
+  const out: RepairAssignment[] = [];
+  for (const idxs of byId.values()) {
+    const anchors = idxs.filter((i) => entries[i].hasModel);
+    if (anchors.length <= 1) continue; // no duplication for this id
+    const legends = idxs.filter((i) => entries[i].part === "legend");
+
+    // Greedily reserve each anchor's nearest legend (anchor order = z-order, so the
+    // original keeps its legend first); only the extra anchors get reassigned.
+    const used = new Set<number>();
+    const legendFor = new Map<number, number | null>();
+    for (const ai of anchors) {
+      let best = -1;
+      let bestD = Infinity;
+      for (const li of legends) {
+        if (used.has(li)) continue;
+        const d = (entries[li].cx - entries[ai].cx) ** 2 + (entries[li].cy - entries[ai].cy) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = li;
+        }
+      }
+      if (best >= 0) used.add(best);
+      legendFor.set(ai, best >= 0 ? best : null);
+    }
+    for (let a = 1; a < anchors.length; a++) {
+      out.push({ anchorIndex: anchors[a], legendIndex: legendFor.get(anchors[a]) ?? null });
+    }
+  }
+  return out;
+}
+
+/** Find duplicated chart ids on the slide and reassign fresh ids to the copies. */
+export async function repairDuplicateChartIds(
+  context: PowerPoint.RequestContext,
+  slide: PowerPoint.Slide
+): Promise<number> {
+  const shapes = slide.shapes;
+  shapes.load("items");
+  await context.sync();
+
+  const probes = shapes.items.map((s) => {
+    const id = s.tags.getItemOrNullObject(TAG_ID);
+    const model = s.tags.getItemOrNullObject(TAG_MODEL);
+    const part = s.tags.getItemOrNullObject(TAG_PART);
+    id.load("value, isNullObject");
+    model.load("value, isNullObject");
+    part.load("value, isNullObject");
+    s.load("left, top, width, height");
+    return { s, id, model, part };
+  });
+  await context.sync();
+
+  const refs = probes.filter((p) => !p.id.isNullObject);
+  const entries: RepairEntry[] = refs.map((p) => ({
+    id: p.id.value,
+    hasModel: !p.model.isNullObject,
+    part: p.part.isNullObject ? null : p.part.value,
+    cx: p.s.left + p.s.width / 2,
+    cy: p.s.top + p.s.height / 2,
+  }));
+
+  const plan = planDuplicateRepair(entries);
+  if (plan.length === 0) return 0;
+
+  for (const asg of plan) {
+    const fresh = newId();
+    const anchor = refs[asg.anchorIndex];
+    anchor.s.tags.add(TAG_ID, fresh); // PowerPoint tag add() upserts by key
+    try {
+      const m = JSON.parse(anchor.model.value) as ChartModel;
+      m.id = fresh;
+      anchor.s.tags.add(TAG_MODEL, JSON.stringify(m));
+    } catch {
+      // leave a malformed model alone; the id split still de-conflicts editing
+    }
+    if (asg.legendIndex != null) refs[asg.legendIndex].s.tags.add(TAG_ID, fresh);
+  }
+  await context.sync();
+  return plan.length;
+}
 
 /** Read every BLP chart on a slide by parsing the model stamped on anchor shapes. */
 export async function getSlideCharts(

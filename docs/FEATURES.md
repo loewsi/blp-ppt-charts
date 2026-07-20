@@ -23,7 +23,7 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - 🔵 Live apply — **typing a value now commits on Enter/Tab/blur** (was: needed a transpose)
 - 🔵 Insert a fresh chart; select loads it; **click-away deselects**
 - 🔵 Positive / zero / negative values (zero label shown at baseline when zeros aren't hidden)
-- ⬜ **Duplicate-chartId repair** — copy-paste on the same slide clones the id (works across slides). **HIGH**
+- 🔵 **Duplicate-chartId repair** — same-slide copy-paste splits the copy onto a fresh id (pairs its legend) *(new)*
 - ⬜ Dates as categories; custom "value = 100%" base
 
 ### Colors
