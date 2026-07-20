@@ -126,6 +126,7 @@ function hidePane(): void {
 
 let lastPolled: ChartBox | null = null;
 let lastRenderedBox: ChartBox | null = null; // the chart's box right after our last draw
+let lastResizeApplyMs = 0; // safety cap so resize can't rapid-fire
 
 async function pollResize(): Promise<void> {
   if (busy || !currentId) return;
@@ -147,17 +148,20 @@ async function pollResize(): Promise<void> {
     lastPolled = box; // still dragging — wait for it to settle
     return;
   }
+  if (performance.now() - lastResizeApplyMs < 2500) return; // safety: at most once / 2.5s
+  lastResizeApplyMs = performance.now();
   lastPolled = box;
   currentBox = box; // adopt the size the user dragged to
   await updateChart(); // redraws at currentBox and refreshes lastRenderedBox
 }
 
 function sameBox(a: ChartBox, b: ChartBox): boolean {
+  // 3pt tolerance so sub-point jitter never reads as a resize.
   return (
-    Math.abs(a.left - b.left) < 1 &&
-    Math.abs(a.top - b.top) < 1 &&
-    Math.abs(a.width - b.width) < 1 &&
-    Math.abs(a.height - b.height) < 1
+    Math.abs(a.left - b.left) < 3 &&
+    Math.abs(a.top - b.top) < 3 &&
+    Math.abs(a.width - b.width) < 3 &&
+    Math.abs(a.height - b.height) < 3
   );
 }
 
