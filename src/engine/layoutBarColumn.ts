@@ -169,15 +169,16 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   function drawLegend() {
     const sw = 10;
     const gapx = 6;
+    const textWs = data.series.map((s) => estTextW(s.name, 9)); // legend text sized to content
     if (legendPos === "top" || legendPos === "bottom") {
       const itemGap = 14;
-      const widths = data.series.map((s) => sw + gapx + Math.max(20, s.name.length * 5.5));
+      const widths = textWs.map((tw) => sw + gapx + tw);
       const total = widths.reduce((a, b) => a + b, 0) + itemGap * Math.max(0, data.series.length - 1);
       let x = box.left + Math.max(0, (box.width - total) / 2);
       const y = legendPos === "top" ? box.top + 4 : box.top + box.height - legendH + 6;
       data.series.forEach((s, i) => {
         prims.push({ kind: "rect", x, y: y + 1, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-        prims.push({ kind: "text", x: x + sw + gapx, y: y - 3, w: widths[i] - sw - gapx, h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y: y - 3, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
         x += widths[i] + itemGap;
       });
     } else {
@@ -185,7 +186,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       let y = plotTop;
       data.series.forEach((s, i) => {
         prims.push({ kind: "rect", x, y: y + 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
-        prims.push({ kind: "text", x: x + sw + gapx, y: y - 1, w: legendW - sw - gapx - 6, h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
+        prims.push({ kind: "text", x: x + sw + gapx, y: y - 1, w: Math.min(legendW - sw - gapx - 4, textWs[i]), h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, meta: { objectType: "legend", seriesIndex: i } });
         y += 16;
       });
     }
