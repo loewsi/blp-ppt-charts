@@ -22,12 +22,25 @@ describe("formatNumber", () => {
     expect(formatNumber(5, { ...base, prefix: "$", suffix: "x" })).toBe("$5x");
   });
 
-  it("scales thousands", () => {
-    expect(formatNumber(1000, { ...base, scale: "k", decimals: 0 })).toBe("1k");
+  it("scales thousands (divides only, no letter — user adds the suffix)", () => {
+    expect(formatNumber(1000, { ...base, scale: "k", decimals: 0 })).toBe("1");
+    expect(formatNumber(1500, { ...base, scale: "k", decimals: 1, suffix: "k" })).toMatch(/^1[.,]5k$/);
   });
 
-  it("scales millions", () => {
-    expect(formatNumber(3_000_000, { ...base, scale: "M", decimals: 0 })).toBe("3M");
+  it("scales millions (divides only, no letter)", () => {
+    expect(formatNumber(3_000_000, { ...base, scale: "M", decimals: 0 })).toBe("3");
+  });
+
+  it("honors an explicit separator style", () => {
+    expect(formatNumber(1234567, { ...base, thousandsSep: true, sep: "apos" })).toBe("1'234'567");
+    expect(formatNumber(1234.5, { ...base, decimals: 1, thousandsSep: true, sep: "dot" })).toBe("1.234,5");
+    expect(formatNumber(1234567, { ...base, thousandsSep: true, sep: "comma" })).toBe("1,234,567");
+  });
+
+  it("shows displayed zero only when it truly rounds to zero", () => {
+    expect(formatNumber(0.4, { ...base, decimals: 0, hideZero: true })).toBe("");
+    expect(formatNumber(0.4, { ...base, decimals: 0, hideZero: false })).toBe("0");
+    expect(formatNumber(0.6, { ...base, decimals: 0, hideZero: true })).toBe("1");
   });
 
   it("keeps decimals (separator may be locale-specific)", () => {

@@ -19,19 +19,23 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Data & editing
 - ✅ Excel-like grid (edit categories/series/values, keyboard nav, range select, Ctrl+Space, Ctrl +/−, copy/paste)
-- 🔵 Add / remove / reorder / transpose series & categories
-- 🔵 Live apply (any edit re-renders the selected chart)
-- 🔵 Insert a fresh chart; duplicate by copy-paste
-- 🔵 Positive / zero / negative values
+- 🔵 Add / remove / transpose series & categories — **remove now targets the cursor's row/col**
+- 🔵 Live apply — **typing a value now commits on Enter/Tab/blur** (was: needed a transpose)
+- 🔵 Insert a fresh chart; select loads it; **click-away deselects**
+- 🔵 Positive / zero / negative values (zero label shown at baseline when zeros aren't hidden)
+- ⬜ **Duplicate-chartId repair** — copy-paste on the same slide clones the id (works across slides). **HIGH**
 - ⬜ Dates as categories; custom "value = 100%" base
 
 ### Colors
-- 🔵 Master theme accents (live) · BLP · grayscale presets; per-series swatch
+- 🔵 Master theme accents (live) · Blue · Grayscale presets (more blue shades); per-series swatch
+- ⬜ Color picker + auto-generated shades; per-series picker showing the master scheme
 - ⬜ Per-segment color override + highlight; series outline; pattern fill
 
 ### Segment / value labels
 - ✅ Inside chip with collision offset (Silvan: "labels inside are fine, I like them")
-- 🔵 Show/hide, move-outside option, value or %, box sized to text, in front of bars, vertical-centered
+- 🔵 Show/hide, value or %, box sized to text, in front of bars, vertical-centered
+- 🔵 Wide labels get a colored chip (fixes white-on-white); overlap-spread now moves the anchor label too
+- ⬜ Global inside/outside placement for ALL labels (today "Move outside" only affects small segments)
 - ⬜ Custom prefix/suffix text per label; datasheet text; footnotes; manual drag + leader line
 
 ### Total labels
@@ -40,16 +44,19 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Legend
 - 🔵 Add/remove, position top/bottom/left/right, autofit box, own movable group
+- 🔵 Picking a position snaps the legend there; a manual drag stays until you pick a new position *(fixed)*
 - ⬜ Reorder entries independently; format one entry; border
 
 ### Axis, gridlines, baseline
-- 🔵 Baseline; optional value axis (auto scale, ticks); optional gridlines
-- 🔵 Manual axis min/max  *(new)*
+- 🔵 Baseline; optional axis labels (auto scale, ticks); optional gridlines; **axis line toggle** *(new)*
+- 🔵 Manual axis min/max
+- ⬜ Sync axis (same scale) across multiple charts
 - ⬜ Manual tick step; secondary axis; axis break; axis title
 
 ### Number formatting (shared engine)
-- 🔵 Decimals, k/M scale, prefix, suffix, hide-zero
-- 🔵 Percent, thousands separator, negatives in parentheses, plus sign  *(new)*
+- 🔵 Decimals, magnitude ÷1e3/÷1e6 (no auto letter — add your own suffix), prefix, suffix
+- 🔵 Hide-zero (toggle respected), percent, plus sign, negatives in parentheses
+- 🔵 Separator style: `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / system  *(new)*
 - ⬜ Currency presets; per-label-type formats
 
 ### Fonts / text
@@ -66,7 +73,7 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - 🔵 Series connectors (stacked columns)  *(new)*
 - ⬜ Difference arrows (level & total, absolute & %)
 - ⬜ CAGR arrows (auto growth over a period)
-- 🔵 Value / reference line (target line at a fixed value, labelled)  *(new)*
+- 🔵 Value / reference line (target line at a fixed value, labelled, **color configurable**)
 - ⬜ Error bars / ranges
 
 ---
@@ -75,13 +82,16 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Column / bar family
 - 🔵 Simple column, stacked, clustered, 100% stacked, horizontal bar
-- 🔵 Negative values below baseline  *(new)*
+- 🔵 Negative values below baseline
+- 🔵 Reverse series (stacking/cluster order), separate from reverse categories *(new)*
+- 🔵 100% stacked shows the absolute total on top *(fixed)*
 - ⬜ Combination — one series as a line
 - ⬜ Line markers, secondary axis; category gaps / visual grouping
 
-### Waterfall
-- 🔵 Running totals, rise/fall bars, connectors, zero baseline, signed labels
-- ⬜ Subtotal / total columns anchored to baseline
+### Waterfall — ⚠️ needs rework (Silvan: "logic does not work yet")
+- ⬜ Use the same categories/series grid + naming as the column family
+- ⬜ think-cell "e" cell = a calculated subtotal/total column
+- ⬜ Connector-controlled totals (choose where the total lands) — shared mechanic with CAGR from→to
 - ⬜ Bar (horizontal) orientation; per-bar color override
 
 ### Mekko / Marimekko — ⬜

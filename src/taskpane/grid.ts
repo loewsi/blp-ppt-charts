@@ -106,6 +106,11 @@ export function setSeriesColor(index: number, color: string): void {
   seriesColors[index] = color;
 }
 
+/** The active cell (row 0 = categories, col 0 = series). Used by remove-at-cursor. */
+export function getActive(): { r: number; c: number } {
+  return { r: active.r, c: active.c };
+}
+
 // ---- rendering -----------------------------------------------------------
 function render(): void {
   if (!host) return;
@@ -127,6 +132,13 @@ function render(): void {
       inp.addEventListener("mouseover", () => onMouseOver(r, c));
       inp.addEventListener("dblclick", () => beginEdit(r, c));
       inp.addEventListener("keydown", (e) => onKey(e, r, c));
+      inp.addEventListener("blur", () => {
+        // Focus left this cell while still editing (e.g. clicked a pane control): commit.
+        if (editing && active.r === r && active.c === c) {
+          editing = false;
+          emit();
+        }
+      });
       inp.addEventListener("copy", onCopy);
       inp.addEventListener("paste", onPaste);
       td.appendChild(inp);
@@ -171,6 +183,7 @@ function clampActive(): void {
 }
 
 function moveTo(r: number, c: number, extend: boolean): void {
+  const wasEditing = editing; // committing an edit must re-render the chart
   const R = cells.length;
   const C = cells[0].length;
   active = { r: Math.min(Math.max(0, r), R - 1), c: Math.min(Math.max(0, c), C - 1) };
@@ -182,6 +195,7 @@ function moveTo(r: number, c: number, extend: boolean): void {
     el.focus();
   }
   paint();
+  if (wasEditing) emit();
 }
 
 function beginEdit(r: number, c: number, replaceWith?: string): void {
@@ -204,6 +218,7 @@ function beginEdit(r: number, c: number, replaceWith?: string): void {
 // ---- mouse ---------------------------------------------------------------
 function onMouseDown(r: number, c: number, e: MouseEvent): void {
   if (editing && r === active.r && c === active.c) return; // clicking inside the cell being edited
+  const wasEditing = editing; // clicking away from an edit commits it
   dragging = true;
   if (e.shiftKey) {
     active = { r, c }; // extend from existing anchor
@@ -215,6 +230,7 @@ function onMouseDown(r: number, c: number, e: MouseEvent): void {
   const el = inputAt(r, c);
   if (el) el.readOnly = true;
   paint();
+  if (wasEditing) emit();
 }
 
 function onMouseOver(r: number, c: number): void {
@@ -244,6 +260,7 @@ function onKey(e: KeyboardEvent, r: number, c: number): void {
   // ---- navigate mode ----
   if (e.code === "Space" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
+    e.stopPropagation(); // don't let the host webview treat Ctrl+Space as its own shortcut
     anchor = { r: 0, c };
     active = { r: cells.length - 1, c };
     paint();
@@ -251,6 +268,7 @@ function onKey(e: KeyboardEvent, r: number, c: number): void {
   }
   if (e.code === "Space" && e.shiftKey) {
     e.preventDefault();
+    e.stopPropagation();
     anchor = { r, c: 0 };
     active = { r, c: cells[0].length - 1 };
     paint();

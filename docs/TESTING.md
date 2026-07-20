@@ -9,6 +9,25 @@ the corresponding 🔵 → ✅ in [FEATURES.md](FEATURES.md).
 
 ---
 
+## ⭐ Re-verify first — fixed from your 2026-07-20 feedback
+- [ ] **Typing a value now updates the chart** (no transpose needed) — commit with Enter/Tab or click away.
+- [ ] **Click blank area** → pane resets to "No chart selected".
+- [ ] **− Series / − Category** now removes the row/column your cursor is in (not the last).
+- [ ] **Ctrl+Space** selects the column without opening a menu (may still hit an OS language shortcut — tell me if so).
+- [ ] **100% stacked** now shows the **absolute** total on top.
+- [ ] **Reverse series** checkbox (separate from Reverse categories).
+- [ ] **Legend position** switching works directly now (no need to remove + re-add); a manually-dragged legend still stays put until you pick a new position.
+- [ ] **Axis line** checkbox draws the y-axis (column) / value-scale line (bar).
+- [ ] **Reference color** picker next to Reference line.
+- [ ] **Number magnitude** (÷1,000 / ÷1,000,000) no longer appends a "k"/"M" — add your own suffix.
+- [ ] **Separators** dropdown: pick `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / System.
+- [ ] **Hide zeros** toggle is respected (off → a `0` shows at the baseline; on → hidden).
+- [ ] **Large value labels** that are wider than the bar now get a colored chip (no more white-on-white).
+- [ ] **Overlapping small labels** now spread to both sides — including the one nearest the axis.
+- [ ] **Colors:** scheme renamed **Blue** (was "BLP"), with more shades.
+
+---
+
 ## 1. Core lifecycle
 - [ ] **Insert** a chart → default stacked column appears.
 - [ ] Click a **blank area** → pane says "No chart selected".
@@ -63,6 +82,11 @@ the corresponding 🔵 → ✅ in [FEATURES.md](FEATURES.md).
 
 ---
 
-## Known-open (not built — don't test yet)
-Difference arrows, CAGR arrows, combination line series, waterfall subtotal columns,
-per-segment color override, error bars. See [FEATURES.md](FEATURES.md).
+## Known-open (not built / broken — don't test yet)
+- **Copy-paste on the SAME slide** duplicates the internal id → selecting/editing gets confused
+  (works across different slides). Duplicate-id repair is the next fix.
+- **Waterfall** needs a rework (categories/series naming + a think-cell "e" total cell +
+  connector-controlled totals) — current version is placeholder-level.
+- Difference arrows, CAGR arrows (both need real arrowheads), combination line series,
+  per-segment color override, error bars, sync-axis-across-charts, color picker + auto-shades,
+  global inside/outside label placement. See [FEATURES.md](FEATURES.md).

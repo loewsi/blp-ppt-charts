@@ -27,7 +27,7 @@ import {
   translatePart,
 } from "../engine/persistence";
 import { newId } from "../util/id";
-import { mountGrid, setGridData, getGridData, setSeriesColor } from "./grid";
+import { mountGrid, setGridData, getGridData, setSeriesColor, getActive } from "./grid";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
@@ -126,6 +126,7 @@ function hidePane(): void {
 let lastPolled: ChartBox | null = null;
 let lastRenderedBox: ChartBox | null = null; // the chart's box right after our last draw
 let lastResizeApplyMs = 0; // safety cap so resize can't rapid-fire
+let lastLegendPosition: string | null = null; // to detect a deliberate position change
 
 async function pollResize(): Promise<void> {
   if (busy || !currentId) return;
@@ -175,7 +176,15 @@ async function onSelectionChanged(): Promise<void> {
     await withSlide(async (context, slide) => {
       const id = await getSelectedChartId(context);
       if (!id) {
-        hidePane(); // clicked away from any chart
+        // Clicked away from any chart → drop back to "no chart selected".
+        if (currentId !== null) {
+          currentId = null;
+          currentName = "";
+          lastRenderedBox = null;
+          setMode();
+          status("No chart selected — click a chart, or Insert one.");
+        }
+        hidePane();
         return;
       }
       showPane(); // a chart is selected → open the editor
@@ -199,10 +208,11 @@ function show(which: "app" | "unsupported"): void {
 const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
   "optTotals", "optLabels", "optReverse",
-  "optLegend", "legendPosition", "optGridlines", "optAxis", "optConnectors", "labelOverflow",
+  "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
+  "optReverseSeries", "optRefColor", "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
-  "nfThousands", "nfParens", "nfPlus",
+  "nfThousands", "nfSep", "nfParens", "nfPlus",
 ];
 
 function wire(): void {
@@ -270,7 +280,8 @@ function addSeries(): void {
 function removeSeries(): void {
   currentData = readGrid();
   if (currentData.series.length <= 1) return;
-  currentData.series.pop();
+  const idx = Math.min(currentData.series.length - 1, Math.max(0, getActive().r - 1)); // series the cursor is in
+  currentData.series.splice(idx, 1);
   renderGrid();
   scheduleApply();
 }
@@ -286,8 +297,9 @@ function addCategory(): void {
 function removeCategory(): void {
   currentData = readGrid();
   if (currentData.categories.length <= 1) return;
-  currentData.categories.pop();
-  currentData.series.forEach((s) => s.values.pop());
+  const idx = Math.min(currentData.categories.length - 1, Math.max(0, getActive().c - 1)); // category the cursor is in
+  currentData.categories.splice(idx, 1);
+  currentData.series.forEach((s) => s.values.splice(idx, 1));
   renderGrid();
   scheduleApply();
 }
@@ -312,10 +324,10 @@ async function applyColors(): Promise<void> {
     palette = await withSlide((ctx, slide) => loadMasterAccents(ctx, slide));
     if (palette.length === 0) {
       status("Couldn't read master colors on this host — using BLP instead.", true);
-      palette = PALETTES.blp;
+      palette = PALETTES.blue;
     }
   } else {
-    palette = PALETTES[scheme] ?? PALETTES.blp;
+    palette = PALETTES[scheme] ?? PALETTES.blue;
   }
   currentData = readGrid();
   currentData.series.forEach((s, i) => {
@@ -359,6 +371,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
       currentId = model.id;
       currentName = name;
       lastRenderedBox = await getChartBox(context, slide, model.id); // baseline for resize detection
+      lastLegendPosition = model.options.legendPosition;
     });
   } finally {
     busy = false;
@@ -379,8 +392,11 @@ async function updateChart(): Promise<void> {
     await withSlide(async (context, slide) => {
       const opts = readOptions();
       const box = currentBox; // redraw at the intended box; the resize poll updates currentBox
-      // Remember where the legend sits, so a redraw doesn't snap it back to default.
-      const savedLegend = opts.showLegend ? await getPartBox(context, slide, currentId!, "legend") : null;
+      // Preserve a manually-moved legend — but if the user just picked a new default
+      // position, let it snap there instead of translating it back.
+      const positionChanged = lastLegendPosition !== opts.legendPosition;
+      const savedLegend =
+        opts.showLegend && !positionChanged ? await getPartBox(context, slide, currentId!, "legend") : null;
       await deleteChart(context, slide, currentId!);
       const model: ChartModel = {
         id: currentId!,
@@ -398,6 +414,7 @@ async function updateChart(): Promise<void> {
         }
       }
       lastRenderedBox = await getChartBox(context, slide, currentId!); // baseline for resize detection
+      lastLegendPosition = opts.legendPosition;
     });
   } finally {
     busy = false;
@@ -411,6 +428,7 @@ function applyModel(model: ChartModel): void {
   currentBox = model.box;
   currentId = model.id;
   currentName = model.name || "chart";
+  lastLegendPosition = model.options.legendPosition;
   setOptionsUI(model.options);
   (byId("chartType") as HTMLSelectElement).value = model.data.type;
   renderGrid();
@@ -509,7 +527,10 @@ function readOptions(): ChartOptions {
     legendPosition: v("legendPosition") as "top" | "bottom" | "left" | "right",
     showGridlines: c("optGridlines"),
     showValueAxis: c("optAxis"),
+    showAxisLine: c("optAxisLine"),
     showConnectors: c("optConnectors"),
+    reverseSeries: c("optReverseSeries"),
+    referenceColor: v("optRefColor") || "#E8412C",
     labelOverflow: v("labelOverflow") as "inside" | "outside",
     fontFamily: v("fontFamily"),
     segmentFontSize: clampInt(Number(v("segFontSize")), 6, 24),
@@ -521,6 +542,7 @@ function readOptions(): ChartOptions {
       suffix: v("nfSuffix"),
       hideZero: c("nfHideZero"),
       thousandsSep: c("nfThousands"),
+      sep: v("nfSep") as "locale" | "comma" | "dot" | "apos" | "space",
       negParens: c("nfParens"),
       plusSign: c("nfPlus"),
     },
@@ -541,7 +563,10 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("legendPosition") as HTMLSelectElement).value = o.legendPosition;
   (byId("optGridlines") as HTMLInputElement).checked = o.showGridlines;
   (byId("optAxis") as HTMLInputElement).checked = o.showValueAxis;
+  (byId("optAxisLine") as HTMLInputElement).checked = o.showAxisLine;
   (byId("optConnectors") as HTMLInputElement).checked = o.showConnectors;
+  (byId("optReverseSeries") as HTMLInputElement).checked = o.reverseSeries;
+  (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";
   (byId("labelOverflow") as HTMLSelectElement).value = o.labelOverflow;
   (byId("fontFamily") as HTMLSelectElement).value = o.fontFamily;
   (byId("segFontSize") as HTMLInputElement).value = String(o.segmentFontSize);
@@ -552,6 +577,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("nfSuffix") as HTMLInputElement).value = o.numberFormat.suffix;
   (byId("nfHideZero") as HTMLInputElement).checked = o.numberFormat.hideZero;
   (byId("nfThousands") as HTMLInputElement).checked = o.numberFormat.thousandsSep;
+  (byId("nfSep") as HTMLSelectElement).value = o.numberFormat.sep;
   (byId("nfParens") as HTMLInputElement).checked = o.numberFormat.negParens;
   (byId("nfPlus") as HTMLInputElement).checked = o.numberFormat.plusSign;
 }

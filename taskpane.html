@@ -39,8 +39,8 @@
           </label>
           <label>Orientation
             <select id="optOrientation">
-              <option value="column">Column</option>
-              <option value="bar">Bar (horizontal)</option>
+              <option value="column">Vertical bars (column)</option>
+              <option value="bar">Horizontal bars (bar)</option>
             </select>
           </label>
           <label>Arrangement
@@ -56,6 +56,9 @@
           <label>Reference line
             <input id="optRefValue" type="number" step="any" placeholder="off" />
           </label>
+          <label>Reference color
+            <input id="optRefColor" type="color" value="#E8412C" />
+          </label>
           <label>Axis min
             <input id="optAxisMin" type="number" step="any" placeholder="auto" />
           </label>
@@ -64,10 +67,12 @@
           </label>
           <label class="chk"><input id="optTotals" type="checkbox" checked /> Totals</label>
           <label class="chk"><input id="optLabels" type="checkbox" checked /> Value labels</label>
-          <label class="chk"><input id="optReverse" type="checkbox" /> Reverse order</label>
+          <label class="chk"><input id="optReverse" type="checkbox" /> Reverse categories</label>
+          <label class="chk"><input id="optReverseSeries" type="checkbox" /> Reverse series</label>
           <label class="chk"><input id="optLegend" type="checkbox" /> Legend</label>
           <label class="chk"><input id="optGridlines" type="checkbox" /> Gridlines</label>
-          <label class="chk"><input id="optAxis" type="checkbox" /> Value axis</label>
+          <label class="chk"><input id="optAxis" type="checkbox" /> Axis labels</label>
+          <label class="chk"><input id="optAxisLine" type="checkbox" /> Axis line</label>
           <label class="chk"><input id="optConnectors" type="checkbox" /> Connectors</label>
           <label>Legend pos
             <select id="legendPosition">
@@ -84,17 +89,26 @@
           <label>Decimals
             <input id="nfDecimals" type="number" min="0" max="3" step="1" value="0" />
           </label>
-          <label>Scale
+          <label>Magnitude
             <select id="nfScale">
-              <option value="none">None</option>
-              <option value="k">Thousands (k)</option>
-              <option value="M">Millions (M)</option>
+              <option value="none">×1</option>
+              <option value="k">÷ 1,000</option>
+              <option value="M">÷ 1,000,000</option>
             </select>
           </label>
           <label>Prefix <input id="nfPrefix" type="text" placeholder="$" /></label>
           <label>Suffix <input id="nfSuffix" type="text" placeholder="kg" /></label>
+          <label>Separators
+            <select id="nfSep">
+              <option value="comma">1,234.56</option>
+              <option value="dot">1.234,56</option>
+              <option value="apos">1'234.56</option>
+              <option value="space">1 234,56</option>
+              <option value="locale">System</option>
+            </select>
+          </label>
           <label class="chk"><input id="nfHideZero" type="checkbox" checked /> Hide zeros</label>
-          <label class="chk"><input id="nfThousands" type="checkbox" /> Thousands ,</label>
+          <label class="chk"><input id="nfThousands" type="checkbox" /> Group thousands</label>
           <label class="chk"><input id="nfParens" type="checkbox" /> Negatives ( )</label>
           <label class="chk"><input id="nfPlus" type="checkbox" /> Plus sign</label>
         </div>
@@ -125,7 +139,7 @@
         <div class="row">
           <select id="colorScheme">
             <option value="master">Master accents</option>
-            <option value="blp">BLP (blue)</option>
+            <option value="blue">Blue</option>
             <option value="grayscale">Grayscale</option>
           </select>
           <button id="applyColorsBtn" class="ghost">Apply</button>

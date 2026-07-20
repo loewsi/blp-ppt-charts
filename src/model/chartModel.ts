@@ -21,14 +21,18 @@ export interface ChartData {
   series: Series[];
 }
 
+/** Thousands/decimal separator style. "locale" = the viewer's system default. */
+export type SeparatorStyle = "locale" | "comma" | "dot" | "apos" | "space";
+
 /** How numbers render in labels/totals/axis. Reused everywhere (see format.ts). */
 export interface NumberFormat {
   decimals: number; // 0..3
-  scale: "none" | "k" | "M"; // divide by 1 / 1e3 / 1e6
+  scale: "none" | "k" | "M"; // divide by 1 / 1e3 / 1e6 (no letter appended — add your own suffix)
   prefix: string; // e.g. "$"
   suffix: string; // e.g. " kg"
   hideZero: boolean; // blank instead of 0
   thousandsSep: boolean; // group thousands (1,234)
+  sep: SeparatorStyle; // which grouping + decimal characters to use
   negParens: boolean; // show negatives as (123) instead of −123
   plusSign: boolean; // show a leading + on positives
 }
@@ -45,7 +49,10 @@ export interface ChartOptions {
   showGridlines: boolean; // value-axis gridlines across the plot
   showValueAxis: boolean; // value-axis tick labels
   showConnectors: boolean; // connector lines between stacked segments across categories
+  reverseSeries: boolean; // reverse the series stacking / cluster order
+  showAxisLine: boolean; // draw the value-axis line (y-axis for columns)
   referenceValue: number | null; // horizontal reference/target line at this value (null = off)
+  referenceColor: string; // color of the reference line + its label
   axisMin: number | null; // fix the value-axis minimum (null = auto)
   axisMax: number | null; // fix the value-axis maximum (null = auto)
   labelOverflow: "inside" | "outside"; // small-segment labels: keep inside (chip + offset) or place outside
@@ -85,14 +92,20 @@ export const PALETTE = ["#2E75FF", "#001C54", "#9CC0FF", "#5A93FF", "#C7DEFF", "
 // blue shades, so typical charts stay blue and only pull in other accents when
 // there are many series.
 export const PALETTES: Record<string, string[]> = {
-  blp: [
+  // Mainly-blue shades so typical charts stay on-brand; non-blue accents only kick
+  // in past ~8 series.
+  blue: [
     "#2E75FF", // BLP blue
     "#001C54", // dark navy
     "#5A93FF",
-    "#9CC0FF",
     "#12377E",
+    "#9CC0FF",
+    "#1E4FB8",
     "#7FB0FF",
-    "#E8412C", // accents only kick in past ~6 series
+    "#3F5B8C",
+    "#C7DEFF",
+    "#0A2A6B",
+    "#E8412C", // accents beyond the blues
     "#F5A623",
     "#2FA84F",
     "#7B4FE0",
@@ -107,6 +120,7 @@ export const DEFAULT_NUMBER_FORMAT: NumberFormat = {
   suffix: "",
   hideZero: true,
   thousandsSep: false,
+  sep: "comma",
   negParens: false,
   plusSign: false,
 };
@@ -123,7 +137,10 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   showGridlines: false,
   showValueAxis: false,
   showConnectors: false,
+  reverseSeries: false,
+  showAxisLine: false,
   referenceValue: null,
+  referenceColor: "#E8412C",
   axisMin: null,
   axisMax: null,
   labelOverflow: "inside",

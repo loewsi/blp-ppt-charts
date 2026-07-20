@@ -182,6 +182,48 @@ describe("layoutBarColumn — negative values", () => {
   });
 });
 
+describe("layoutBarColumn — reverse series / totals / axis line / zeros", () => {
+  const bottomOf = (rs: RectPrimitive[]) => rs.reduce((a, b) => (a.y + a.h > b.y + b.h ? a : b));
+
+  it("reverseSeries flips which series sits on the baseline", () => {
+    const normal = segRects(layoutBarColumn(model({}))).filter((r) => r.meta?.categoryIndex === 0);
+    const rev = segRects(layoutBarColumn(model({ reverseSeries: true }))).filter((r) => r.meta?.categoryIndex === 0);
+    expect(bottomOf(normal).meta?.seriesIndex).toBe(0);
+    expect(bottomOf(rev).meta?.seriesIndex).toBe(1);
+  });
+
+  it("shows the absolute total on 100% stacked", () => {
+    const prims = layoutBarColumn(model({ grouping: "stacked100" }));
+    const totals = prims.filter((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "totalLabel");
+    expect(totals.length).toBe(2);
+    expect(totals.map((t) => t.text)).toContain("40"); // cat A: 10 + 30, absolute (not 100%)
+  });
+
+  it("draws a value-axis line only when enabled", () => {
+    const line = (p: ReturnType<typeof layoutBarColumn>) =>
+      p.some((s) => s.kind === "line" && s.meta?.objectType === "valueAxis");
+    expect(line(layoutBarColumn(model({ showAxisLine: true })))).toBe(true);
+    expect(line(layoutBarColumn(model({})))).toBe(false);
+  });
+
+  it("labels a zero segment at the baseline only when zeros aren't hidden", () => {
+    const data = {
+      type: "barColumn" as const,
+      categories: ["A"],
+      series: [
+        { name: "S1", color: "#111", values: [0] },
+        { name: "S2", color: "#222", values: [5] },
+      ],
+    };
+    const labelsWith = (hideZero: boolean) =>
+      layoutBarColumn(model({ numberFormat: { ...defaultOptions().numberFormat, hideZero } }, data)).filter(
+        (s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "segmentLabel"
+      );
+    expect(labelsWith(false).some((l) => l.text === "0")).toBe(true);
+    expect(labelsWith(true).some((l) => l.text === "0")).toBe(false);
+  });
+});
+
 describe("layoutBarColumn — reference line", () => {
   const isRef = (s: { meta?: { objectType?: string } }) => s.meta?.objectType === "valueLine";
 

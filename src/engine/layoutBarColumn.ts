@@ -35,6 +35,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
 
   const order = data.categories.map((_, i) => i);
   if (opt.reverseCategories) order.reverse();
+  const serOrder = data.series.map((_, i) => i); // stacking/cluster order (bottom→top)
+  if (opt.reverseSeries) serOrder.reverse();
 
   // Reserved bands (only when a feature is on, so defaults are unchanged).
   const axisBand = opt.showValueAxis ? 28 : 0;
@@ -137,6 +139,13 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const fam = opt.fontFamily;
   const labelH = opt.segmentFontSize + 5; // approx label box height for collision checks
 
+  // Does a centered value label fit inside the bar (so white-on-color stays readable)?
+  // If not, the caller falls back to a chip so the text keeps a colored backing.
+  function labelFits(text: string, thick: number): boolean {
+    if (isColumn) return estTextW(text, opt.segmentFontSize) <= thick + 2; // text must fit the bar width
+    return thick >= opt.segmentFontSize + 4; // bar must be tall enough for the text row
+  }
+
   function pushCenteredLabel(cx: number, cy: number, _thick: number, text: string, meta: ShapeMeta) {
     const w = estTextW(text, opt.segmentFontSize); // box only as wide as the text, centered on (cx, cy)
     prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
@@ -156,6 +165,31 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       prims.push({ kind: "text", x: cx + halfThick + 3, y: cy - 7, w, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "left", family: fam, meta });
     } else {
       prims.push({ kind: "text", x: cx - w / 2, y: cy - halfThick - 14, w, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
+    }
+  }
+
+  type Chip = { c: number; cx: number; cy: number; text: string; fill: string; meta: ShapeMeta };
+  // Place a category's small "inside" chips: any run of overlapping labels is
+  // spread to alternating sides (the one nearest the axis moves too); isolated
+  // labels stay centered.
+  function resolveChips(list: Chip[]) {
+    list.sort((a, b) => a.c - b.c);
+    let i = 0;
+    while (i < list.length) {
+      let j = i;
+      while (j + 1 < list.length && Math.abs(list[j + 1].c - list[j].c) < labelH) j++;
+      for (let k = i; k <= j; k++) {
+        const it = list[k];
+        let cx = it.cx;
+        let cy = it.cy;
+        if (j > i) {
+          const dir = (k - i) % 2 === 0 ? 1 : -1;
+          if (isColumn) cx += dir * (estTextW(it.text, opt.segmentFontSize) / 2 + 3);
+          else cy += dir * (labelH * 0.7);
+        }
+        pushChipLabel(cx, cy, catThick, it.text, it.fill, it.meta);
+      }
+      i = j + 1;
     }
   }
 
@@ -237,16 +271,29 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     const ci = order[k];
     const slotStart = k * slot + (slot - catThick) / 2;
     const total = totals[ci] || 0;
-    let prevLabelC = -Infinity; // center of the last placed small label (along value axis)
-    let side = 1; // alternates the collision offset left/right (or up/down)
+    const chips: Chip[] = []; // small "inside" labels, positioned after the stack is known
 
     if (stacked) {
       let cumPos = 0;
       let cumNeg = 0;
-      for (let si = 0; si < nSer; si++) {
+      for (let sidx = 0; sidx < nSer; sidx++) {
+        const si = serOrder[sidx];
+        const color = data.series[si].color;
         const raw = safe(data.series[si].values[ci]);
         const v = norm100 ? (total === 0 ? 0 : raw / total) : raw;
-        if (v === 0) continue;
+        const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
+        if (v === 0) {
+          // No bar to draw, but surface a "0" at the baseline when zeros aren't hidden.
+          if (!norm100 && opt.showValueLabels) {
+            const t = formatNumber(raw, nf);
+            if (t) {
+              const cx = isColumn ? plotLeft + slotStart + catThick / 2 : xv(0);
+              const cy = isColumn ? yv(0) : plotTop + slotStart + catThick / 2;
+              chips.push({ c: isColumn ? cy : cx, cx, cy, text: t, fill: color, meta: m });
+            }
+          }
+          continue;
+        }
         let seg0: number;
         let seg1: number;
         if (v > 0) {
@@ -258,64 +305,51 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           seg1 = cumNeg;
           cumNeg += v;
         }
-        const r = emitRect(slotStart, catThick, seg0, seg1, data.series[si].color, {
-          objectType: "segment",
-          seriesIndex: si,
-          categoryIndex: ci,
-        });
+        const r = emitRect(slotStart, catThick, seg0, seg1, color, { objectType: "segment", seriesIndex: si, categoryIndex: ci });
         if (opt.showValueLabels) {
-          const text = norm100 ? formatPercent(raw, total, nf.decimals) : formatNumber(raw, nf);
-          const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
+          const text = norm100 ? formatPercent(raw, total, nf.decimals, nf.sep) : formatNumber(raw, nf);
           const segPx = Math.abs(v) * vScale;
           if (text) {
-            if (segPx >= MIN_SEG_FOR_LABEL) {
+            if (segPx >= MIN_SEG_FOR_LABEL && labelFits(text, catThick)) {
               pushCenteredLabel(r.cx, r.cy, catThick, text, m);
-              prevLabelC = isColumn ? r.cy : r.cx;
+            } else if (segPx >= MIN_SEG_FOR_LABEL) {
+              pushChipLabel(r.cx, r.cy, catThick, text, color, m); // tall enough, but text wider than bar → chip
             } else if (opt.labelOverflow === "outside") {
               pushOutsideLabel(r.cx, r.cy, catThick / 2, text, m);
             } else {
-              // keep inside: chip + nudge off-center when it collides with the last one
-              let cx = r.cx;
-              let cy = r.cy;
-              const cur = isColumn ? cy : cx;
-              if (Math.abs(cur - prevLabelC) < labelH) {
-                const off = estTextW(text, opt.segmentFontSize) / 2 + 3;
-                if (isColumn) cx += side * off;
-                else cy += side * (labelH * 0.6);
-                side = -side;
-              }
-              pushChipLabel(cx, cy, catThick, text, data.series[si].color, m);
-              prevLabelC = cur;
+              chips.push({ c: isColumn ? r.cy : r.cx, cx: r.cx, cy: r.cy, text, fill: color, meta: m });
             }
           }
         }
       }
-      if (opt.showTotals && !norm100) {
-        const text = formatNumber(total, nf);
-        if (text) pushTotal(slotStart, catThick, Math.max(cumPos, 0), text, { objectType: "totalLabel", categoryIndex: ci });
+      if (opt.showTotals) {
+        const text = formatNumber(total, nf); // absolute total, shown even on 100% stacked
+        const topPos = norm100 ? (total === 0 ? 0 : 1) : Math.max(cumPos, 0);
+        if (text) pushTotal(slotStart, catThick, topPos, text, { objectType: "totalLabel", categoryIndex: ci });
       }
     } else {
       const laneThick = catThick / nSer;
-      for (let si = 0; si < nSer; si++) {
+      for (let sidx = 0; sidx < nSer; sidx++) {
+        const si = serOrder[sidx];
+        const color = data.series[si].color;
         const raw = safe(data.series[si].values[ci]);
         if (raw === 0) continue;
-        const r = emitRect(slotStart + si * laneThick, laneThick, 0, raw, data.series[si].color, {
-          objectType: "segment",
-          seriesIndex: si,
-          categoryIndex: ci,
-        });
+        const r = emitRect(slotStart + sidx * laneThick, laneThick, 0, raw, color, { objectType: "segment", seriesIndex: si, categoryIndex: ci });
         if (opt.showValueLabels) {
           const text = formatNumber(raw, nf);
           const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
           if (text) {
-            if (Math.abs(raw) * vScale >= MIN_SEG_FOR_LABEL) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
+            const big = Math.abs(raw) * vScale >= MIN_SEG_FOR_LABEL;
+            if (big && labelFits(text, laneThick)) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
+            else if (big) pushChipLabel(r.cx, r.cy, laneThick, text, color, m);
             else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, laneThick / 2, text, m);
-            else pushChipLabel(r.cx, r.cy, laneThick, text, data.series[si].color, m);
+            else pushChipLabel(r.cx, r.cy, laneThick, text, color, m);
           }
         }
       }
     }
 
+    resolveChips(chips);
     pushCategoryLabel(slotStart, catThick, data.categories[ci], { objectType: "categoryLabel", categoryIndex: ci });
   }
 
@@ -352,20 +386,30 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     prims.push({ kind: "line", x1: x0, y1: plotTop, x2: x0, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: baselineMeta });
   }
 
+  // Value-axis line (the "y-axis" for columns; the horizontal scale line for bars).
+  if (opt.showAxisLine) {
+    if (isColumn) {
+      prims.push({ kind: "line", x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
+    } else {
+      prims.push({ kind: "line", x1: plotLeft, y1: plotTop + plotH, x2: plotLeft + plotW, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
+    }
+  }
+
   // Reference/target line: a horizontal (column) or vertical (bar) marker at a
   // fixed value, drawn on top of the bars with its value labelled at the end.
   const rv = opt.referenceValue;
+  const refColor = opt.referenceColor || REF_COLOR;
   if (rv != null && isFinite(rv) && !norm100 && rv >= vMin && rv <= vMax) {
     const text = formatNumber(rv, { ...nf, hideZero: false });
     const tw = estTextW(text, 9);
     if (isColumn) {
       const y = yv(rv);
-      prims.push({ kind: "line", x1: plotLeft, y1: y, x2: plotLeft + plotW, y2: y, color: REF_COLOR, weight: 1.25, meta: { objectType: "valueLine" } });
-      prims.push({ kind: "text", x: plotLeft + plotW - tw, y: y - 15, w: tw, h: 14, text, color: REF_COLOR, size: 9, bold: true, align: "right", family: fam, meta: { objectType: "valueLine" } });
+      prims.push({ kind: "line", x1: plotLeft, y1: y, x2: plotLeft + plotW, y2: y, color: refColor, weight: 1.25, meta: { objectType: "valueLine" } });
+      prims.push({ kind: "text", x: plotLeft + plotW - tw, y: y - 15, w: tw, h: 14, text, color: refColor, size: 9, bold: true, align: "right", family: fam, meta: { objectType: "valueLine" } });
     } else {
       const x = xv(rv);
-      prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: REF_COLOR, weight: 1.25, meta: { objectType: "valueLine" } });
-      prims.push({ kind: "text", x: x - tw / 2, y: plotTop - 15, w: tw, h: 14, text, color: REF_COLOR, size: 9, bold: true, align: "center", family: fam, meta: { objectType: "valueLine" } });
+      prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: refColor, weight: 1.25, meta: { objectType: "valueLine" } });
+      prims.push({ kind: "text", x: x - tw / 2, y: plotTop - 15, w: tw, h: 14, text, color: refColor, size: 9, bold: true, align: "center", family: fam, meta: { objectType: "valueLine" } });
     }
   }
 
