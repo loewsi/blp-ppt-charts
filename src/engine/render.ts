@@ -75,35 +75,37 @@ function makeShape(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint
   }
 
   if (p.kind === "line") {
-    // Horizontal/vertical lines render as thin rectangles — deterministic and
-    // crisp on Windows + Mac (PowerPoint connectors misdraw zero-height boxes
-    // as diagonals). True diagonals fall back to a real connector.
-    const dx = Math.abs(p.x2 - p.x1);
-    const dy = Math.abs(p.y2 - p.y1);
-    const isHorizontal = dy < 0.5;
-    const isVertical = dx < 0.5;
-    if (isHorizontal || isVertical) {
-      const w = isHorizontal ? dx : p.weight;
-      const h = isHorizontal ? p.weight : dy;
+    // All lines render as thin rectangles (deterministic on Windows + Mac).
+    // Horizontal/vertical are axis-aligned; diagonals are a rotated rectangle,
+    // which avoids PowerPoint connectors misdrawing the slant direction.
+    const adx = Math.abs(p.x2 - p.x1);
+    const ady = Math.abs(p.y2 - p.y1);
+    if (adx < 0.5 || ady < 0.5) {
+      const horizontal = ady < 0.5;
       const s = shapes.addGeometricShape(PowerPoint.GeometricShapeType.rectangle, {
-        left: Math.min(p.x1, p.x2) - (isVertical ? p.weight / 2 : 0),
-        top: Math.min(p.y1, p.y2) - (isHorizontal ? p.weight / 2 : 0),
-        width: w,
-        height: h,
+        left: Math.min(p.x1, p.x2) - (horizontal ? 0 : p.weight / 2),
+        top: Math.min(p.y1, p.y2) - (horizontal ? p.weight / 2 : 0),
+        width: horizontal ? adx : p.weight,
+        height: horizontal ? p.weight : ady,
       });
       s.fill.setSolidColor(p.color);
       s.lineFormat.visible = false;
       return s;
     }
-    const s = shapes.addLine(PowerPoint.ConnectorType.straight, {
-      left: Math.min(p.x1, p.x2),
-      top: Math.min(p.y1, p.y2),
-      width: dx,
-      height: dy,
+    // Diagonal: a thin rectangle of length |P1P2| rotated to the segment angle.
+    const len = Math.hypot(p.x2 - p.x1, p.y2 - p.y1);
+    const angle = (Math.atan2(p.y2 - p.y1, p.x2 - p.x1) * 180) / Math.PI;
+    const midX = (p.x1 + p.x2) / 2;
+    const midY = (p.y1 + p.y2) / 2;
+    const s = shapes.addGeometricShape(PowerPoint.GeometricShapeType.rectangle, {
+      left: midX - len / 2,
+      top: midY - p.weight / 2,
+      width: len,
+      height: p.weight,
     });
-    s.lineFormat.color = p.color;
-    s.lineFormat.weight = p.weight;
-    s.lineFormat.visible = true;
+    s.fill.setSolidColor(p.color);
+    s.lineFormat.visible = false;
+    s.rotation = angle;
     return s;
   }
 

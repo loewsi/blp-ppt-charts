@@ -198,7 +198,7 @@ function show(which: "app" | "unsupported"): void {
 
 const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optTotals", "optLabels", "optReverse",
-  "optLegend", "legendPosition", "optGridlines", "optAxis", "labelOverflow",
+  "optLegend", "legendPosition", "optGridlines", "optAxis", "optConnectors", "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
   "nfThousands", "nfParens", "nfPlus",
@@ -500,6 +500,7 @@ function readOptions(): ChartOptions {
     legendPosition: v("legendPosition") as "top" | "bottom" | "left" | "right",
     showGridlines: c("optGridlines"),
     showValueAxis: c("optAxis"),
+    showConnectors: c("optConnectors"),
     labelOverflow: v("labelOverflow") as "inside" | "outside",
     fontFamily: v("fontFamily"),
     segmentFontSize: clampInt(Number(v("segFontSize")), 6, 24),
@@ -528,6 +529,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("legendPosition") as HTMLSelectElement).value = o.legendPosition;
   (byId("optGridlines") as HTMLInputElement).checked = o.showGridlines;
   (byId("optAxis") as HTMLInputElement).checked = o.showValueAxis;
+  (byId("optConnectors") as HTMLInputElement).checked = o.showConnectors;
   (byId("labelOverflow") as HTMLSelectElement).value = o.labelOverflow;
   (byId("fontFamily") as HTMLSelectElement).value = o.fontFamily;
   (byId("segFontSize") as HTMLInputElement).value = String(o.segmentFontSize);

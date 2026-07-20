@@ -44,6 +44,7 @@ export interface ChartOptions {
   legendPosition: "top" | "bottom" | "left" | "right";
   showGridlines: boolean; // value-axis gridlines across the plot
   showValueAxis: boolean; // value-axis tick labels
+  showConnectors: boolean; // connector lines between stacked segments across categories
   labelOverflow: "inside" | "outside"; // small-segment labels: keep inside (chip + offset) or place outside
   fontFamily: string; // font for all labels
   segmentFontSize: number; // pt, segment/value labels
@@ -118,6 +119,7 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   legendPosition: "bottom",
   showGridlines: false,
   showValueAxis: false,
+  showConnectors: false,
   labelOverflow: "inside",
   fontFamily: "Roboto",
   segmentFontSize: 9,

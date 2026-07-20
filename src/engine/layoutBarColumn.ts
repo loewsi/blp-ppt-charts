@@ -5,6 +5,7 @@ import { formatNumber, formatPercent } from "./format";
 
 const AXIS_COLOR = "#001C54";
 const GRID_COLOR = "#D7E2F4";
+const CONNECTOR_COLOR = "#9AA6BF";
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
 
@@ -272,6 +273,29 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   }
 
   // Baseline along the category axis.
+  // Connectors: link the segment boundaries of adjacent stacked columns.
+  if (opt.showConnectors && stacked && isColumn && nSer > 1) {
+    for (let k = 0; k < nCats - 1; k++) {
+      const ciA = order[k];
+      const ciB = order[k + 1];
+      const totA = totals[ciA] || 0;
+      const totB = totals[ciB] || 0;
+      const aRight = plotLeft + k * slot + (slot - catThick) / 2 + catThick;
+      const bLeft = plotLeft + (k + 1) * slot + (slot - catThick) / 2;
+      let cumA = 0;
+      let cumB = 0;
+      for (let si = 0; si < nSer - 1; si++) {
+        const rawA = safe(data.series[si].values[ciA]);
+        const rawB = safe(data.series[si].values[ciB]);
+        cumA += norm100 ? (totA === 0 ? 0 : rawA / totA) : rawA;
+        cumB += norm100 ? (totB === 0 ? 0 : rawB / totB) : rawB;
+        const ya = plotTop + plotH - cumA * valScale;
+        const yb = plotTop + plotH - cumB * valScale;
+        prims.push({ kind: "line", x1: aRight, y1: ya, x2: bLeft, y2: yb, color: CONNECTOR_COLOR, weight: 0.75, meta: { objectType: "connector", categoryIndex: k } });
+      }
+    }
+  }
+
   const baselineMeta: ShapeMeta = { objectType: "baseline" };
   if (isColumn) {
     const baseline = plotTop + plotH;

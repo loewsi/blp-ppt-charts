@@ -119,6 +119,13 @@ describe("layoutBarColumn — furniture (opt-in)", () => {
     expect(prims.some((s) => s.meta?.objectType === "gridline")).toBe(true);
     expect(prims.some((s) => s.meta?.objectType === "valueAxis")).toBe(true);
   });
+
+  it("draws connectors between stacked columns only when enabled", () => {
+    const on = layoutBarColumn(model({ showConnectors: true }));
+    const off = layoutBarColumn(model({ showConnectors: false }));
+    expect(on.some((s) => s.kind === "line" && s.meta?.objectType === "connector")).toBe(true);
+    expect(off.some((s) => s.kind === "line" && s.meta?.objectType === "connector")).toBe(false);
+  });
 });
 
 describe("layoutBarColumn — small labels & fonts", () => {
