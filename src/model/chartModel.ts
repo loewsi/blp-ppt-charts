@@ -28,6 +28,9 @@ export interface NumberFormat {
   prefix: string; // e.g. "$"
   suffix: string; // e.g. " kg"
   hideZero: boolean; // blank instead of 0
+  thousandsSep: boolean; // group thousands (1,234)
+  negParens: boolean; // show negatives as (123) instead of −123
+  plusSign: boolean; // show a leading + on positives
 }
 
 export interface ChartOptions {
@@ -99,6 +102,9 @@ export const DEFAULT_NUMBER_FORMAT: NumberFormat = {
   prefix: "",
   suffix: "",
   hideZero: true,
+  thousandsSep: false,
+  negParens: false,
+  plusSign: false,
 };
 
 export const DEFAULT_OPTIONS: ChartOptions = {

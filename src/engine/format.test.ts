@@ -33,6 +33,22 @@ describe("formatNumber", () => {
   it("keeps decimals (separator may be locale-specific)", () => {
     expect(formatNumber(3.14159, { ...base, decimals: 2 })).toMatch(/^3[.,]14$/);
   });
+
+  it("groups thousands when enabled", () => {
+    expect(formatNumber(1234567, { ...base, thousandsSep: true })).toMatch(/^1[.,\s]234[.,\s]567$/);
+  });
+
+  it("shows negatives with a minus by default", () => {
+    expect(formatNumber(-5, base)).toBe("−5");
+  });
+
+  it("shows negatives in parentheses when enabled", () => {
+    expect(formatNumber(-5, { ...base, negParens: true })).toBe("(5)");
+  });
+
+  it("adds a plus sign to positives when enabled", () => {
+    expect(formatNumber(5, { ...base, plusSign: true })).toBe("+5");
+  });
 });
 
 describe("formatPercent", () => {

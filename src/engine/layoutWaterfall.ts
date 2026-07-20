@@ -104,8 +104,8 @@ function safe(v: number | undefined): number {
 }
 
 function signed(v: number, nf: Parameters<typeof formatNumber>[1]): string {
-  const s = formatNumber(Math.abs(v), nf);
-  if (!s) return v > 0 ? "+0" : s;
+  const s = formatNumber(Math.abs(v), { ...nf, plusSign: false, negParens: false });
+  if (!s) return "";
   return (v < 0 ? "−" : "+") + s;
 }
 

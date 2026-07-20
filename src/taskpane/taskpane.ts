@@ -201,6 +201,7 @@ const OPTION_IDS = [
   "optLegend", "legendPosition", "optGridlines", "optAxis", "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
+  "nfThousands", "nfParens", "nfPlus",
 ];
 
 function wire(): void {
@@ -509,6 +510,9 @@ function readOptions(): ChartOptions {
       prefix: v("nfPrefix"),
       suffix: v("nfSuffix"),
       hideZero: c("nfHideZero"),
+      thousandsSep: c("nfThousands"),
+      negParens: c("nfParens"),
+      plusSign: c("nfPlus"),
     },
   };
 }
@@ -533,6 +537,9 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("nfPrefix") as HTMLInputElement).value = o.numberFormat.prefix;
   (byId("nfSuffix") as HTMLInputElement).value = o.numberFormat.suffix;
   (byId("nfHideZero") as HTMLInputElement).checked = o.numberFormat.hideZero;
+  (byId("nfThousands") as HTMLInputElement).checked = o.numberFormat.thousandsSep;
+  (byId("nfParens") as HTMLInputElement).checked = o.numberFormat.negParens;
+  (byId("nfPlus") as HTMLInputElement).checked = o.numberFormat.plusSign;
 }
 
 function clampInt(n: number, lo: number, hi: number): number {

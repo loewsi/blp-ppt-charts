@@ -2,9 +2,15 @@
 
 Living checklist, reconciled with the original think-cell-style spec. Organized as
 **General** (cross-chart — built in the shared engine, so every chart type inherits it)
-and **Per chart type**. Status: ✅ done · 🟡 partial · ⬜ todo · ⚠️ constrained/deferred.
+and **Per chart type**.
 
-The architecture is shared: model → layout → render-plan → PowerPoint adapter. Anything under
+**Status:**
+- ✅ **Tested** — confirmed working in PowerPoint by Silvan
+- 🔵 **Implemented** — built + unit-tested in code; NOT yet confirmed in PowerPoint (Claude is blind to the rendered chart)
+- ⬜ **Open** — not built yet
+- ⚠️ **Deferred** — blocked by the Office.js platform / deployment path
+
+Architecture is shared: model → layout → render-plan → PowerPoint adapter. Anything under
 **General** applies to all chart types once that type has a layout function.
 
 ---
@@ -12,93 +18,84 @@ The architecture is shared: model → layout → render-plan → PowerPoint adap
 ## General (applies across chart types)
 
 ### Data & editing
-- ✅ Excel-like grid: editable categories (row 0) + series (col 0) + values
-- ✅ Keyboard nav, range select (mouse + Shift+arrows), Ctrl+Space/Shift+Space, Ctrl +/−
-- ✅ Copy / paste from Excel (native in the grid)
-- ✅ Add / remove / reorder / transpose series & categories
-- ✅ Live apply — any edit re-renders the selected chart automatically
-- ✅ Insert a fresh chart; duplicate by copy-paste on the slide
-- ✅ Positive / zero values · 🟡 negative values (below-baseline handling not done)
-- ⬜ Use dates as categories; custom "value = 100%" base
+- ✅ Excel-like grid (edit categories/series/values, keyboard nav, range select, Ctrl+Space, Ctrl +/−, copy/paste)
+- 🔵 Add / remove / reorder / transpose series & categories
+- 🔵 Live apply (any edit re-renders the selected chart)
+- 🔵 Insert a fresh chart; duplicate by copy-paste
+- 🔵 Positive / zero / negative values
+- ⬜ Dates as categories; custom "value = 100%" base
 
 ### Colors
-- ✅ Master theme accents (live) · BLP (blue) · grayscale presets
-- ✅ Per-series color (swatch), applied across the whole series
-- ⬜ Per-segment color override (one segment a different color) + highlight
-- ⬜ Series outline (color/width/style), pattern fill
+- 🔵 Master theme accents (live) · BLP · grayscale presets; per-series swatch
+- ⬜ Per-segment color override + highlight; series outline; pattern fill
 
 ### Segment / value labels
-- ✅ Show/hide, inside chip with collision offset, or move outside
-- ✅ Value or % (100% stacked); box sized to text; in front of bars; vertical-centered
-- ⬜ Custom prefix/suffix text per label, datasheet text, footnotes
-- ⬜ Manual drag of a single label + leader line (model supports offset later)
+- ✅ Inside chip with collision offset (Silvan: "labels inside are fine, I like them")
+- 🔵 Show/hide, move-outside option, value or %, box sized to text, in front of bars, vertical-centered
+- ⬜ Custom prefix/suffix text per label; datasheet text; footnotes; manual drag + leader line
 
 ### Total labels
-- ✅ Totals above stacks, independent font size, sized to text
-- ⬜ Show totals only for selected categories; custom total text; drag a total
+- 🔵 Totals above stacks, independent font size, sized to text
+- ⬜ Totals for selected categories only; custom total text; drag a total
 
 ### Legend
-- ✅ Add/remove, position top/bottom/left/right, box auto-fits the name, own group (movable)
-- ⬜ Reorder legend entries independently; format one entry; border
+- 🔵 Add/remove, position top/bottom/left/right, autofit box, own movable group
+- ⬜ Reorder entries independently; format one entry; border
 
 ### Axis, gridlines, baseline
-- ✅ Baseline; optional value axis (auto scale, tick labels); optional gridlines
+- 🔵 Baseline; optional value axis (auto scale, ticks); optional gridlines
 - ⬜ Manual min/max/tick; secondary axis; axis break; axis title
 
 ### Number formatting (shared engine)
-- ✅ Decimals, k/M scale, prefix, suffix, hide-zero
-- ⬜ Percent/currency presets, thousands separators toggle, parentheses for negatives, per-type formats
+- 🔵 Decimals, k/M scale, prefix, suffix, hide-zero
+- 🔵 Percent, thousands separator, negatives in parentheses, plus sign  *(new)*
+- ⬜ Currency presets; per-label-type formats
 
 ### Fonts / text
-- ✅ Font family; independent segment & total sizes; middle+centered in box
-- ⬜ Bold/italic/color per label type; per-type independent everything
+- 🔵 Font family; independent segment & total sizes; middle+centered
+- ⬜ Bold/italic/color per label type
 
 ### Interaction / lifecycle
-- ✅ Click a chart → loads into the pane; edits live
-- ✅ Move chart (no reload); resize → re-lays-out on release; tiny sizes stay visible
-- ✅ Legend stays where you move it across redraws
-- ✅ Data stored in the .pptx (survives reopen, travels with the file)
-- ⬜ Copy-to-another-slide/deck **duplicate-chartId repair**; undo-step quality
-- ⚠️ Ribbon "insert type" menu + auto open/close pane — needs shared runtime; blocked on
-  trusted-catalog sideload. Revisit via M365 central deploy / AppSource.
+- 🔵 Click a chart → loads into pane; move (no reload); resize → re-lays-out on release; tiny sizes stay visible; legend stays put
+- 🔵 Data stored in the .pptx (reopen/travel)
+- ⬜ Copy-to-slide/deck duplicate-chartId repair; undo-step quality
+- ⚠️ Ribbon insert + auto open/close pane (needs shared runtime; blocked on trusted-catalog sideload → revisit via central deploy / AppSource)
 
-### Annotations (data-driven) — none built yet
-- ⬜ **Series connectors** (between stacked segments across categories) — also enables waterfall
-- ⬜ **Difference arrows** (level & total, absolute & %)
-- ⬜ **CAGR arrows** (auto growth over a period; chart-area grows to fit)
+### Annotations (data-driven)
+- 🔵 Series connectors (stacked columns)  *(new)*
+- ⬜ Difference arrows (level & total, absolute & %)
+- ⬜ CAGR arrows (auto growth over a period)
 - ⬜ Value / reference lines
-- ⬜ Error bars / ranges (football field)
+- ⬜ Error bars / ranges
 
 ---
 
 ## Per chart type
 
-### Column / bar family — ✅ core done
-- ✅ Simple column (1 series), stacked, clustered, 100% stacked
-- ✅ Horizontal bar variants (rotate; labels stay horizontal)
-- ⬜ Combination (a series as a line), line markers, secondary axis
-- 🟡 Negative values (render path exists; below-baseline layout not handled)
-- ⬜ Category gaps / visual grouping; per-cluster gaps
+### Column / bar family
+- 🔵 Simple column, stacked, clustered, 100% stacked, horizontal bar
+- 🔵 Negative values below baseline  *(new)*
+- 🔵 Combination — one series as a line  *(new)*
+- ⬜ Line markers, secondary axis; category gaps / visual grouping
 
-### Waterfall — ⬜ NEXT
-- ⬜ Running totals with rise/fall bars, connectors, subtotal columns
-- Reuses labels/colors/legend/axis/number-format from General
+### Waterfall
+- 🔵 Running totals, rise/fall bars, connectors, zero baseline, signed labels
+- 🔵 Subtotal / total columns anchored to baseline  *(new)*
+- ⬜ Bar (horizontal) orientation; per-bar color override
 
-### Mekko / Marimekko — ⬜ later
-### Pie / doughnut — ⬜ later (out of the bar family; only if wanted)
+### Mekko / Marimekko — ⬜
+### Pie / doughnut — ⬜ (only if wanted; outside the bar family)
 
 ---
 
-## Explicitly not feasible in Office.js (documented)
+## Deferred / not feasible in Office.js
+- ⚠️ Shared-runtime ribbon + auto-pane (deployment-path dependent)
 - ❌ Embedded Excel datasheet (grid + paste is the substitute)
-- ❌ Live external Excel links (would need Graph API; deferred)
-- ❌ On-canvas anchored toolbar; ⚠️ shared-runtime ribbon/auto-pane (deploy-path dependent)
+- ❌ Live external Excel links (would need Graph API)
+- ❌ On-canvas anchored toolbar
 
 ---
 
-## Recommended order from here
-1. **Series connectors** (small, general, and a prerequisite for waterfall)
-2. **Waterfall** chart type (your original end goal)
-3. **Difference arrows**, then **CAGR arrows**
-4. Per-segment color, negative-value handling, richer number formats
-5. Combination (line) series
+## Testing backlog (needs Silvan in PowerPoint)
+Everything marked 🔵 is unit-tested but not visually confirmed. Highest-value to verify first:
+waterfall render, negative values, connectors, legend positions, colors, resize/move, number formats.

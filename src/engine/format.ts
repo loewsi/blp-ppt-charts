@@ -15,12 +15,16 @@ export function formatNumber(value: number, f: NumberFormat): string {
     scaleSuffix = "M";
   }
 
-  const body = x.toLocaleString(undefined, {
+  const negative = x < 0;
+  const body = Math.abs(x).toLocaleString(undefined, {
     minimumFractionDigits: f.decimals,
     maximumFractionDigits: f.decimals,
+    useGrouping: !!f.thousandsSep,
   });
 
-  return `${f.prefix}${body}${scaleSuffix}${f.suffix}`;
+  const core = `${f.prefix}${body}${scaleSuffix}${f.suffix}`;
+  if (negative) return f.negParens ? `(${core})` : `−${core}`;
+  return f.plusSign ? `+${core}` : core;
 }
 
 /** Percent of a total, e.g. for 100% stacked labels: always "NN%". */
