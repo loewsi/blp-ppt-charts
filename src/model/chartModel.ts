@@ -54,6 +54,19 @@ export interface ChartOptions {
   showAxisLine: boolean; // draw the value-axis line (y-axis for columns)
   referenceValue: number | null; // horizontal reference/target line at this value (null = off)
   referenceColor: string; // color of the reference line + its label
+  // Difference arrow between two categories: "total" compares column totals,
+  // "series" compares one series' values; from/to are 0-based category indices.
+  diffArrow: "off" | "total" | "series";
+  diffFrom: number;
+  diffTo: number;
+  diffSeries: number;
+  diffPercent: boolean; // also show the % change in the label
+  // CAGR (compound annual growth) arrow across a span of categories.
+  cagrArrow: "off" | "total" | "series";
+  cagrFrom: number;
+  cagrTo: number;
+  cagrSeries: number;
+  cagrPeriods: number; // number of periods between from and to (e.g. years); 0 = derive from category count
   axisMin: number | null; // fix the value-axis minimum (null = auto)
   axisMax: number | null; // fix the value-axis maximum (null = auto)
   labelOverflow: "inside" | "outside"; // small-segment labels: keep inside (chip + offset) or place outside
@@ -142,6 +155,16 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   showAxisLine: false,
   referenceValue: null,
   referenceColor: "#E8412C",
+  diffArrow: "off",
+  diffFrom: 0,
+  diffTo: 1,
+  diffSeries: 0,
+  diffPercent: false,
+  cagrArrow: "off",
+  cagrFrom: 0,
+  cagrTo: 1,
+  cagrSeries: 0,
+  cagrPeriods: 0,
   axisMin: null,
   axisMax: null,
   labelOverflow: "inside",

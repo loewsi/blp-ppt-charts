@@ -7,6 +7,7 @@ const AXIS_COLOR = "#001C54";
 const GRID_COLOR = "#D7E2F4";
 const CONNECTOR_COLOR = "#9AA6BF";
 const REF_COLOR = "#E8412C";
+const ARROW_COLOR = "#001C54"; // difference / CAGR arrows
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
 
@@ -455,9 +456,65 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     }
   }
 
+  // Difference / CAGR arrows: vertical double-headed arrow between two category
+  // levels, with dashed guides to each column top and a labelled delta.
+  const clampIdx = (i: number, n: number) => Math.min(n - 1, Math.max(0, Math.round(i)));
+  const catValue = (ci: number, mode: "total" | "series", seriesIdx: number) =>
+    mode === "total" ? totals[ci] || 0 : safe(data.series[clampIdx(seriesIdx, nSer)].values[ci]);
+
+  function drawSpanArrow(fromCi: number, toCi: number, y1: number, y2: number, label: string) {
+    const kFrom = order.indexOf(fromCi);
+    const kTo = order.indexOf(toCi);
+    if (kFrom < 0 || kTo < 0) return;
+    const xF = plotLeft + kFrom * slot + slot / 2;
+    const xT = plotLeft + kTo * slot + slot / 2;
+    const xA = (xF + xT) / 2;
+    prims.push({ kind: "line", x1: xF, y1, x2: xA, y2: y1, color: ARROW_COLOR, weight: 0.75, dashed: true, meta: { objectType: "differenceArrow" } });
+    prims.push({ kind: "line", x1: xT, y1: y2, x2: xA, y2, color: ARROW_COLOR, weight: 0.75, dashed: true, meta: { objectType: "differenceArrow" } });
+    prims.push({ kind: "arrow", x1: xA, y1, x2: xA, y2, color: ARROW_COLOR, weight: 1.25, doubleHeaded: true, meta: { objectType: "differenceArrow" } });
+    const w = estTextW(label, 10);
+    prims.push({ kind: "text", x: xA + 4, y: (y1 + y2) / 2 - 8, w, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "left", family: fam, bg: "#FFFFFF", meta: { objectType: "differenceArrow" } });
+  }
+
+  if (opt.diffArrow !== "off" && isColumn && nCats >= 2) {
+    const fi = clampIdx(opt.diffFrom, nCats);
+    const ti = clampIdx(opt.diffTo, nCats);
+    if (fi !== ti) {
+      const v1 = catValue(fi, opt.diffArrow, opt.diffSeries);
+      const v2 = catValue(ti, opt.diffArrow, opt.diffSeries);
+      const delta = v2 - v1;
+      let label = formatNumber(delta, { ...nf, plusSign: true, hideZero: false });
+      if (opt.diffPercent && v1 !== 0) {
+        const pct = (delta / Math.abs(v1)) * 100;
+        label += ` (${pct >= 0 ? "+" : "−"}${Math.abs(Math.round(pct))}%)`;
+      }
+      drawSpanArrow(fi, ti, yv(v1), yv(v2), label);
+    }
+  }
+
+  if (opt.cagrArrow !== "off" && isColumn && nCats >= 2) {
+    const fi = clampIdx(opt.cagrFrom, nCats);
+    const ti = clampIdx(opt.cagrTo, nCats);
+    if (fi !== ti) {
+      const v1 = catValue(fi, opt.cagrArrow, opt.cagrSeries);
+      const v2 = catValue(ti, opt.cagrArrow, opt.cagrSeries);
+      const periods = opt.cagrPeriods > 0 ? opt.cagrPeriods : Math.abs(order.indexOf(ti) - order.indexOf(fi));
+      const label = cagrLabel(v1, v2, periods);
+      drawSpanArrow(fi, ti, yv(v1), yv(v2), label);
+    }
+  }
+
   if (opt.showLegend) drawLegend();
 
   return prims;
+}
+
+/** CAGR label like "CAGR +12.5%". Returns "n/a" when it can't be computed. */
+export function cagrLabel(from: number, to: number, periods: number): string {
+  if (periods <= 0 || from <= 0 || to <= 0) return "CAGR n/a";
+  const r = (Math.pow(to / from, 1 / periods) - 1) * 100;
+  const rounded = Math.round(r * 10) / 10;
+  return `CAGR ${rounded >= 0 ? "+" : "−"}${Math.abs(rounded)}%`;
 }
 
 /** "Nice" axis tick values from 0 up to ~max (1/2/5 × 10^n steps). */

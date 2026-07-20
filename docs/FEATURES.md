@@ -71,8 +71,8 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Annotations (data-driven)
 - 🔵 Series connectors (stacked columns)  *(new)*
-- ⬜ Difference arrows (level & total, absolute & %)
-- ⬜ CAGR arrows (auto growth over a period)
+- 🔵 Difference arrows (totals or a series, between two categories, signed delta + optional %) *(new)*
+- 🔵 CAGR arrows (compound growth from→to over N periods; auto-derives periods) *(new)*
 - 🔵 Value / reference line (target line at a fixed value, labelled, **color configurable**)
 - ⬜ Error bars / ranges
 

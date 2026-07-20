@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { layoutBarColumn, niceTicks } from "./layoutBarColumn";
+import { layoutBarColumn, niceTicks, cagrLabel } from "./layoutBarColumn";
 import type { RectPrimitive, TextPrimitive } from "./primitives";
 import type { ChartModel, ChartOptions } from "../model/chartModel";
 import { defaultOptions } from "../model/chartModel";
@@ -329,6 +329,47 @@ describe("layoutBarColumn — line/combination series", () => {
     const bar = segRects(prims).find((r) => r.meta?.seriesIndex === 0)!;
     // The line point (value 100) sits above the bar top (value 10).
     expect(marker.kind === "rect" && bar && marker.y < bar.y).toBe(true);
+  });
+});
+
+describe("layoutBarColumn — difference & CAGR arrows", () => {
+  const isArrow = (s: { meta?: { objectType?: string } }) => s.meta?.objectType === "differenceArrow";
+  const arrowText = (p: ReturnType<typeof layoutBarColumn>) =>
+    p.filter((s): s is TextPrimitive => s.kind === "text" && isArrow(s));
+
+  it("draws no arrows by default", () => {
+    expect(layoutBarColumn(model({})).some(isArrow)).toBe(false);
+  });
+
+  it("difference arrow emits an arrow primitive + a signed delta label", () => {
+    // default data cat A total = 40, cat B total = 60 → +20
+    const prims = layoutBarColumn(model({ diffArrow: "total", diffFrom: 0, diffTo: 1 }));
+    expect(prims.some((s) => s.kind === "arrow" && isArrow(s))).toBe(true);
+    expect(arrowText(prims)[0].text).toBe("+20");
+  });
+
+  it("difference arrow can append a percent", () => {
+    const prims = layoutBarColumn(model({ diffArrow: "total", diffFrom: 0, diffTo: 1, diffPercent: true }));
+    expect(arrowText(prims)[0].text).toBe("+20 (+50%)"); // 20/40 = 50%
+  });
+
+  it("CAGR arrow labels the compound growth", () => {
+    // total A=40 → B=60 over 1 period → +50%
+    const prims = layoutBarColumn(model({ cagrArrow: "total", cagrFrom: 0, cagrTo: 1, cagrPeriods: 1 }));
+    expect(arrowText(prims)[0].text).toBe("CAGR +50%");
+  });
+});
+
+describe("cagrLabel", () => {
+  it("computes compound growth over periods", () => {
+    expect(cagrLabel(100, 121, 2)).toBe("CAGR +10%"); // sqrt(1.21)-1 = 10%
+  });
+  it("handles decline", () => {
+    expect(cagrLabel(100, 90, 1)).toBe("CAGR −10%");
+  });
+  it("guards invalid inputs", () => {
+    expect(cagrLabel(0, 100, 2)).toBe("CAGR n/a");
+    expect(cagrLabel(100, 100, 0)).toBe("CAGR n/a");
   });
 });
 

@@ -113,6 +113,32 @@
           <label class="chk"><input id="nfPlus" type="checkbox" /> Plus sign</label>
         </div>
 
+        <label class="lbl mt">Arrows</label>
+        <div class="opts">
+          <label>Difference
+            <select id="optDiffArrow">
+              <option value="off">Off</option>
+              <option value="total">Between totals</option>
+              <option value="series">Between a series</option>
+            </select>
+          </label>
+          <label class="chk"><input id="optDiffPercent" type="checkbox" /> Show %</label>
+          <label>From cat # <input id="optDiffFrom" type="number" min="1" step="1" value="1" /></label>
+          <label>To cat # <input id="optDiffTo" type="number" min="1" step="1" value="2" /></label>
+          <label>Series # <input id="optDiffSeries" type="number" min="1" step="1" value="1" /></label>
+          <label>CAGR
+            <select id="optCagrArrow">
+              <option value="off">Off</option>
+              <option value="total">Of totals</option>
+              <option value="series">Of a series</option>
+            </select>
+          </label>
+          <label>From cat # <input id="optCagrFrom" type="number" min="1" step="1" value="1" /></label>
+          <label>To cat # <input id="optCagrTo" type="number" min="1" step="1" value="2" /></label>
+          <label>Series # <input id="optCagrSeries" type="number" min="1" step="1" value="1" /></label>
+          <label>Periods <input id="optCagrPeriods" type="number" min="0" step="1" value="0" placeholder="auto" /></label>
+        </div>
+
         <label class="lbl mt">Text &amp; labels</label>
         <div class="opts">
           <label>Font

@@ -213,7 +213,10 @@ const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
-  "optReverseSeries", "optRefColor", "labelOverflow",
+  "optReverseSeries", "optRefColor",
+  "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries",
+  "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
+  "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
   "nfThousands", "nfSep", "nfParens", "nfPlus",
@@ -517,6 +520,7 @@ function readOptions(): ChartOptions {
     const n = Number(raw);
     return raw !== "" && isFinite(n) ? n : null;
   };
+  const idx1 = (id: string) => Math.max(0, (Number(v(id)) || 1) - 1); // 1-based UI → 0-based model
   return {
     orientation: v("optOrientation") as Orientation,
     grouping: v("optGrouping") as Grouping,
@@ -535,6 +539,16 @@ function readOptions(): ChartOptions {
     showConnectors: c("optConnectors"),
     reverseSeries: c("optReverseSeries"),
     referenceColor: v("optRefColor") || "#E8412C",
+    diffArrow: v("optDiffArrow") as "off" | "total" | "series",
+    diffFrom: idx1("optDiffFrom"),
+    diffTo: idx1("optDiffTo"),
+    diffSeries: idx1("optDiffSeries"),
+    diffPercent: c("optDiffPercent"),
+    cagrArrow: v("optCagrArrow") as "off" | "total" | "series",
+    cagrFrom: idx1("optCagrFrom"),
+    cagrTo: idx1("optCagrTo"),
+    cagrSeries: idx1("optCagrSeries"),
+    cagrPeriods: Math.max(0, Number(v("optCagrPeriods")) || 0),
     labelOverflow: v("labelOverflow") as "inside" | "outside",
     fontFamily: v("fontFamily"),
     segmentFontSize: clampInt(Number(v("segFontSize")), 6, 24),
@@ -571,6 +585,16 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optConnectors") as HTMLInputElement).checked = o.showConnectors;
   (byId("optReverseSeries") as HTMLInputElement).checked = o.reverseSeries;
   (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";
+  (byId("optDiffArrow") as HTMLSelectElement).value = o.diffArrow;
+  (byId("optDiffPercent") as HTMLInputElement).checked = o.diffPercent;
+  (byId("optDiffFrom") as HTMLInputElement).value = String(o.diffFrom + 1);
+  (byId("optDiffTo") as HTMLInputElement).value = String(o.diffTo + 1);
+  (byId("optDiffSeries") as HTMLInputElement).value = String(o.diffSeries + 1);
+  (byId("optCagrArrow") as HTMLSelectElement).value = o.cagrArrow;
+  (byId("optCagrFrom") as HTMLInputElement).value = String(o.cagrFrom + 1);
+  (byId("optCagrTo") as HTMLInputElement).value = String(o.cagrTo + 1);
+  (byId("optCagrSeries") as HTMLInputElement).value = String(o.cagrSeries + 1);
+  (byId("optCagrPeriods") as HTMLInputElement).value = String(o.cagrPeriods);
   (byId("labelOverflow") as HTMLSelectElement).value = o.labelOverflow;
   (byId("fontFamily") as HTMLSelectElement).value = o.fontFamily;
   (byId("segFontSize") as HTMLInputElement).value = String(o.segmentFontSize);
