@@ -13,6 +13,7 @@ export interface Series {
   name: string;
   color: string; // "#RRGGBB"
   values: number[]; // one value per category
+  kind?: "bar" | "line"; // draw this series as bars (default) or a line (combination charts)
 }
 
 export interface ChartData {

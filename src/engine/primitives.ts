@@ -22,7 +22,13 @@ export type ObjectType =
   | "connector"
   | "cagrArrow"
   | "differenceArrow"
-  | "valueLine";
+  | "valueLine"
+  | "lineSeries"
+  | "lineMarker"
+  | "slice"
+  | "sliceLabel"
+  | "point"
+  | "quadrant";
 
 export interface ShapeMeta {
   objectType: ObjectType;

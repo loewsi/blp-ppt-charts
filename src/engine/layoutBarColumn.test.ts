@@ -283,6 +283,55 @@ describe("layoutBarColumn — manual axis min/max", () => {
   });
 });
 
+describe("layoutBarColumn — line/combination series", () => {
+  const combo = {
+    type: "barColumn" as const,
+    categories: ["A", "B", "C"],
+    series: [
+      { name: "Bars", color: "#111", values: [10, 20, 30] },
+      { name: "Trend", color: "#E8412C", values: [5, 15, 25], kind: "line" as const },
+    ],
+  };
+  const lines = (p: ReturnType<typeof layoutBarColumn>) =>
+    p.filter((s) => s.kind === "line" && s.meta?.objectType === "lineSeries");
+  const markers = (p: ReturnType<typeof layoutBarColumn>) =>
+    p.filter((s) => s.kind === "rect" && s.meta?.objectType === "lineMarker");
+
+  it("excludes the line series from stacked segments", () => {
+    const segs = segRects(layoutBarColumn(model({ grouping: "stacked" }, combo)));
+    expect(segs.every((r) => r.meta?.seriesIndex === 0)).toBe(true); // only the bar series stacks
+  });
+
+  it("draws a polyline (n-1 segments) plus a marker per point", () => {
+    const prims = layoutBarColumn(model({ grouping: "clustered" }, combo));
+    expect(lines(prims).length).toBe(2); // 3 points → 2 segments
+    expect(markers(prims).length).toBe(3);
+  });
+
+  it("keeps line series out of the totals", () => {
+    const prims = layoutBarColumn(model({ grouping: "stacked" }, combo));
+    const totals = prims.filter((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "totalLabel");
+    // cat A total should be the bar-only value (10), not 10+5.
+    expect(totals.find((t) => t.text === "10")).toBeTruthy();
+  });
+
+  it("expands the axis so a tall line value still fits", () => {
+    const tall = {
+      type: "barColumn" as const,
+      categories: ["A"],
+      series: [
+        { name: "Bars", color: "#111", values: [10] },
+        { name: "Line", color: "#E8412C", values: [100], kind: "line" as const },
+      ],
+    };
+    const prims = layoutBarColumn(model({ grouping: "clustered" }, tall));
+    const marker = prims.find((s) => s.kind === "rect" && s.meta?.objectType === "lineMarker")!;
+    const bar = segRects(prims).find((r) => r.meta?.seriesIndex === 0)!;
+    // The line point (value 100) sits above the bar top (value 10).
+    expect(marker.kind === "rect" && bar && marker.y < bar.y).toBe(true);
+  });
+});
+
 describe("niceTicks", () => {
   it("returns [0] for non-positive max", () => {
     expect(niceTicks(0)).toEqual([0]);

@@ -38,6 +38,14 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const serOrder = data.series.map((_, i) => i); // stacking/cluster order (bottom→top)
   if (opt.reverseSeries) serOrder.reverse();
 
+  // A series can be drawn as a line instead of a bar (combination charts). Lines
+  // only make sense on a value axis, so we keep them to column orientation and skip
+  // them for 100% stacked; elsewhere a "line" series just renders as a bar.
+  const isLine = (si: number) => isColumn && !norm100 && data.series[si].kind === "line";
+  const barOrder = serOrder.filter((si) => !isLine(si)); // series drawn as bars, in stack/cluster order
+  const lineSeries = data.series.map((_, i) => i).filter(isLine); // series drawn as lines
+  const nBar = barOrder.length;
+
   // Reserved bands (only when a feature is on, so defaults are unchanged).
   const axisBand = opt.showValueAxis ? 28 : 0;
   const legendH = 24; // horizontal legend band (top/bottom)
@@ -71,8 +79,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const slot = catExtent / nCats;
   const catThick = slot * (1 - opt.gap);
 
+  // Totals cover the bar (stacked) series only; line series sit on their own.
   const totals = data.categories.map((_, ci) =>
-    data.series.reduce((s, se) => s + safe(se.values[ci]), 0)
+    barOrder.reduce((s, si) => s + safe(data.series[si].values[ci]), 0)
   );
 
   // Value-axis range, including negatives; zero may sit inside the plot.
@@ -86,8 +95,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     for (let ci = 0; ci < nCats; ci++) {
       let p = 0;
       let ng = 0;
-      for (const se of data.series) {
-        const v = safe(se.values[ci]);
+      for (const si of barOrder) {
+        const v = safe(data.series[si].values[ci]);
         if (v > 0) p += v;
         else ng += v;
       }
@@ -99,14 +108,20 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   } else {
     let mx = 1;
     let mn = 0;
-    for (const se of data.series)
-      for (const v of se.values) {
+    for (const si of barOrder)
+      for (const v of data.series[si].values) {
         mx = Math.max(mx, safe(v));
         mn = Math.min(mn, safe(v));
       }
     vMax = mx;
     vMin = Math.min(0, mn);
   }
+  // Fold line-series values into the range so the line always fits on the axis.
+  for (const si of lineSeries)
+    for (const v of data.series[si].values) {
+      vMax = Math.max(vMax, safe(v));
+      vMin = Math.min(0, vMin, safe(v));
+    }
   // Manual axis overrides (auto scale unless the user fixes an end). Not for 100%.
   if (!norm100) {
     if (opt.axisMax != null && isFinite(opt.axisMax)) vMax = opt.axisMax;
@@ -276,8 +291,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     if (stacked) {
       let cumPos = 0;
       let cumNeg = 0;
-      for (let sidx = 0; sidx < nSer; sidx++) {
-        const si = serOrder[sidx];
+      for (let sidx = 0; sidx < nBar; sidx++) {
+        const si = barOrder[sidx];
         const color = data.series[si].color;
         const raw = safe(data.series[si].values[ci]);
         const v = norm100 ? (total === 0 ? 0 : raw / total) : raw;
@@ -328,9 +343,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         if (text) pushTotal(slotStart, catThick, topPos, text, { objectType: "totalLabel", categoryIndex: ci });
       }
     } else {
-      const laneThick = catThick / nSer;
-      for (let sidx = 0; sidx < nSer; sidx++) {
-        const si = serOrder[sidx];
+      const laneThick = catThick / Math.max(1, nBar);
+      for (let sidx = 0; sidx < nBar; sidx++) {
+        const si = barOrder[sidx];
         const color = data.series[si].color;
         const raw = safe(data.series[si].values[ci]);
         if (raw === 0) continue;
@@ -355,7 +370,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
 
   // Baseline along the category axis.
   // Connectors: link the segment boundaries of adjacent stacked columns.
-  if (opt.showConnectors && stacked && isColumn && nSer > 1) {
+  if (opt.showConnectors && stacked && isColumn && nBar > 1) {
     for (let k = 0; k < nCats - 1; k++) {
       const ciA = order[k];
       const ciB = order[k + 1];
@@ -365,7 +380,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const bLeft = plotLeft + (k + 1) * slot + (slot - catThick) / 2;
       let cumA = 0;
       let cumB = 0;
-      for (let si = 0; si < nSer - 1; si++) {
+      for (let sidx = 0; sidx < nBar - 1; sidx++) {
+        const si = barOrder[sidx];
         const rawA = safe(data.series[si].values[ciA]);
         const rawB = safe(data.series[si].values[ciB]);
         cumA += norm100 ? (totA === 0 ? 0 : rawA / totA) : rawA;
@@ -410,6 +426,32 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const x = xv(rv);
       prims.push({ kind: "line", x1: x, y1: plotTop, x2: x, y2: plotTop + plotH, color: refColor, weight: 1.25, meta: { objectType: "valueLine" } });
       prims.push({ kind: "text", x: x - tw / 2, y: plotTop - 15, w: tw, h: 14, text, color: refColor, size: 9, bold: true, align: "center", family: fam, meta: { objectType: "valueLine" } });
+    }
+  }
+
+  // Line series (combination charts): a polyline across category centers with
+  // markers + value labels, drawn on top of the bars. Column orientation only.
+  for (const si of lineSeries) {
+    const s = data.series[si];
+    const pts = order.map((ci, k) => ({
+      x: plotLeft + k * slot + slot / 2,
+      y: yv(safe(s.values[ci])),
+      raw: safe(s.values[ci]),
+      ci,
+    }));
+    for (let i = 0; i < pts.length - 1; i++) {
+      prims.push({ kind: "line", x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y, color: s.color, weight: 1.75, meta: { objectType: "lineSeries", seriesIndex: si } });
+    }
+    const ms = 5;
+    for (const p of pts) {
+      prims.push({ kind: "rect", x: p.x - ms / 2, y: p.y - ms / 2, w: ms, h: ms, fill: s.color, meta: { objectType: "lineMarker", seriesIndex: si, categoryIndex: p.ci } });
+      if (opt.showValueLabels) {
+        const text = formatNumber(p.raw, nf);
+        if (text) {
+          const w = estTextW(text, opt.segmentFontSize);
+          prims.push({ kind: "text", x: p.x - w / 2, y: p.y - 17, w, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: { objectType: "segmentLabel", seriesIndex: si, categoryIndex: p.ci } });
+        }
+      }
     }
   }
 
