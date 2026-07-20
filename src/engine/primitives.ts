@@ -19,6 +19,7 @@ export type ObjectType =
   | "valueAxis"
   | "gridline"
   | "baseline"
+  | "connector"
   | "cagrArrow"
   | "differenceArrow"
   | "valueLine";

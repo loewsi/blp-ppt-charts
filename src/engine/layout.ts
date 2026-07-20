@@ -1,12 +1,13 @@
 import type { ChartModel, ChartType } from "../model/chartModel";
 import type { Primitive } from "./primitives";
 import { layoutBarColumn } from "./layoutBarColumn";
+import { layoutWaterfall } from "./layoutWaterfall";
 
 type LayoutFn = (model: ChartModel) => Primitive[];
 
-// Register future chart families here (e.g. waterfall) - nothing else changes.
 const REGISTRY: Record<ChartType, LayoutFn> = {
   barColumn: layoutBarColumn,
+  waterfall: layoutWaterfall,
 };
 
 export function computeLayout(model: ChartModel): Primitive[] {

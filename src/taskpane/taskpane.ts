@@ -197,7 +197,7 @@ function show(which: "app" | "unsupported"): void {
 }
 
 const OPTION_IDS = [
-  "optOrientation", "optGrouping", "optGap", "optTotals", "optLabels", "optReverse",
+  "chartType", "optOrientation", "optGrouping", "optGap", "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
@@ -338,6 +338,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
   setOptionsUI({ ...defaultOptions(), ...over });
   renderGrid();
   const data = readGrid();
+  data.type = readChartType();
   const box: ChartBox = { ...DEFAULT_BOX };
   busy = true;
   try {
@@ -369,6 +370,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
 async function updateChart(): Promise<void> {
   if (!currentId) return;
   const data = readGrid();
+  data.type = readChartType();
   if (!validate(data)) return;
   busy = true;
   try {
@@ -408,8 +410,13 @@ function applyModel(model: ChartModel): void {
   currentId = model.id;
   currentName = model.name || "chart";
   setOptionsUI(model.options);
+  (byId("chartType") as HTMLSelectElement).value = model.data.type;
   renderGrid();
   setMode();
+}
+
+function readChartType(): "barColumn" | "waterfall" {
+  return (byId("chartType") as HTMLSelectElement).value === "waterfall" ? "waterfall" : "barColumn";
 }
 
 async function withSlide<T>(

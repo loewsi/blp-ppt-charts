@@ -4,7 +4,7 @@
 // The bar/column family. Variants are driven by ChartOptions, not separate types,
 // so one layout engine covers column/bar x stacked/clustered/100%. Waterfall etc.
 // will be added as new families later.
-export type ChartType = "barColumn";
+export type ChartType = "barColumn" | "waterfall";
 
 export type Orientation = "column" | "bar";
 export type Grouping = "stacked" | "clustered" | "stacked100";
@@ -140,7 +140,7 @@ export function normalizeModel(m: ChartModel): ChartModel {
   return {
     ...m,
     schemaVersion: m.schemaVersion ?? legacyVersion ?? CURRENT_SCHEMA_VERSION,
-    data: { ...m.data, type: "barColumn" },
+    data: { ...m.data, type: m.data?.type === "waterfall" ? "waterfall" : "barColumn" },
     options: m.options
       ? { ...DEFAULT_OPTIONS, ...m.options, numberFormat: { ...DEFAULT_NUMBER_FORMAT, ...m.options.numberFormat } }
       : defaultOptions(),

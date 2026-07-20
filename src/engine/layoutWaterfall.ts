@@ -1,0 +1,114 @@
+import type { ChartModel } from "../model/chartModel";
+import { DEFAULT_OPTIONS } from "../model/chartModel";
+import type { Primitive, ShapeMeta } from "./primitives";
+import { formatNumber } from "./format";
+
+const AXIS_COLOR = "#001C54";
+const CONNECTOR_COLOR = "#9AA6BF";
+const LABEL_LIGHT = "#FFFFFF";
+const LABEL_DARK = "#001C54";
+const DEFAULT_FALL = "#E8412C";
+
+const PAD_TOP = 22;
+const PAD_BOTTOM = 26;
+const PAD_SIDE = 8;
+const MIN_BAR_FOR_LABEL = 12;
+
+/**
+ * Waterfall: one series of deltas rendered as floating rise/fall bars with a
+ * running total, connectors between steps, and a zero baseline. Reuses the
+ * shared number-format and font options. Column orientation (v1).
+ */
+export function layoutWaterfall(model: ChartModel): Primitive[] {
+  const opt = model.options ?? DEFAULT_OPTIONS;
+  const nf = opt.numberFormat;
+  const fam = opt.fontFamily;
+  const { data, box } = model;
+  const prims: Primitive[] = [];
+  const n = data.categories.length;
+  const series0 = data.series[0];
+  if (n === 0 || !series0) return prims;
+
+  const deltas = data.categories.map((_, i) => safe(series0.values[i]));
+  const riseColor = series0.color;
+  const fallColor = data.series[1]?.color ?? DEFAULT_FALL;
+
+  // Running totals: before[i] is the cumulative before bar i, after[i] after it.
+  const before: number[] = [];
+  const after: number[] = [];
+  let cum = 0;
+  for (let i = 0; i < n; i++) {
+    before.push(cum);
+    cum += deltas[i];
+    after.push(cum);
+  }
+
+  const plotLeft = box.left + PAD_SIDE;
+  const plotTop = box.top + PAD_TOP;
+  const plotW = Math.max(24, box.width - PAD_SIDE * 2);
+  const plotH = Math.max(24, box.height - PAD_TOP - PAD_BOTTOM);
+
+  const hi = Math.max(0, ...before, ...after);
+  const lo = Math.min(0, ...before, ...after);
+  const range = hi - lo || 1;
+  const scale = plotH / range;
+  const yFor = (v: number) => plotTop + (hi - v) * scale;
+
+  const slot = plotW / n;
+  const gap = opt.gap;
+  const barW = slot * (1 - gap);
+
+  for (let i = 0; i < n; i++) {
+    const x = plotLeft + i * slot + (slot - barW) / 2;
+    const top = Math.max(before[i], after[i]);
+    const bot = Math.min(before[i], after[i]);
+    const yTop = yFor(top);
+    const h = Math.max(0, yFor(bot) - yTop);
+    const fill = deltas[i] >= 0 ? riseColor : fallColor;
+    prims.push({ kind: "rect", x, y: yTop, w: barW, h, fill, meta: { objectType: "segment", seriesIndex: 0, categoryIndex: i } });
+
+    // Delta label (with sign), inside if it fits else just above the bar.
+    if (opt.showValueLabels) {
+      const text = signed(deltas[i], nf);
+      const cx = x + barW / 2;
+      const lw = estTextW(text, opt.segmentFontSize);
+      const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: 0, categoryIndex: i };
+      if (h >= MIN_BAR_FOR_LABEL) {
+        prims.push({ kind: "text", x: cx - lw / 2, y: yTop + h / 2 - 7, w: lw, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: m });
+      } else {
+        prims.push({ kind: "text", x: cx - lw / 2, y: yTop - 16, w: lw, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: m });
+      }
+    }
+
+    // Category label under the baseline.
+    prims.push({ kind: "text", x: plotLeft + i * slot, y: plotTop + plotH + 3, w: slot, h: 16, text: data.categories[i], color: LABEL_DARK, size: 9, bold: false, align: "center", family: fam, meta: { objectType: "categoryLabel", categoryIndex: i } });
+
+    // Connector from this bar's end level to the next bar's start.
+    if (i < n - 1) {
+      const y = yFor(after[i]);
+      const xEnd = x + barW;
+      const xNext = plotLeft + (i + 1) * slot + (slot - barW) / 2;
+      prims.push({ kind: "line", x1: xEnd, y1: y, x2: xNext, y2: y, color: CONNECTOR_COLOR, weight: 1, meta: { objectType: "connector", categoryIndex: i } });
+    }
+  }
+
+  // Zero baseline.
+  const y0 = yFor(0);
+  prims.push({ kind: "line", x1: plotLeft, y1: y0, x2: plotLeft + plotW, y2: y0, color: AXIS_COLOR, weight: 1, meta: { objectType: "baseline" } });
+
+  return prims;
+}
+
+function safe(v: number | undefined): number {
+  return typeof v === "number" && isFinite(v) ? v : 0;
+}
+
+function signed(v: number, nf: Parameters<typeof formatNumber>[1]): string {
+  const s = formatNumber(Math.abs(v), nf);
+  if (!s) return v > 0 ? "+0" : s;
+  return (v < 0 ? "−" : "+") + s;
+}
+
+function estTextW(text: string, size: number): number {
+  return Math.max(10, Math.round(text.length * size * 0.62) + 6);
+}
