@@ -35,7 +35,7 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - ✅ Inside chip with collision offset (Silvan: "labels inside are fine, I like them")
 - 🔵 Show/hide, value or %, box sized to text, in front of bars, vertical-centered
 - 🔵 Wide labels get a colored chip (fixes white-on-white); overlap-spread now moves the anchor label too
-- ⬜ Global inside/outside placement for ALL labels (today "Move outside" only affects small segments)
+- 🔵 Global inside/outside placement — "Outside" now moves ALL value labels out, not just small ones *(new)*
 - ⬜ Custom prefix/suffix text per label; datasheet text; footnotes; manual drag + leader line
 
 ### Total labels

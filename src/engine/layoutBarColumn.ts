@@ -310,12 +310,12 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           const text = norm100 ? formatPercent(raw, total, nf.decimals, nf.sep) : formatNumber(raw, nf);
           const segPx = Math.abs(v) * vScale;
           if (text) {
-            if (segPx >= MIN_SEG_FOR_LABEL && labelFits(text, catThick)) {
+            if (opt.labelOverflow === "outside") {
+              pushOutsideLabel(r.cx, r.cy, catThick / 2, text, m); // outside = ALL labels, not just small
+            } else if (segPx >= MIN_SEG_FOR_LABEL && labelFits(text, catThick)) {
               pushCenteredLabel(r.cx, r.cy, catThick, text, m);
             } else if (segPx >= MIN_SEG_FOR_LABEL) {
               pushChipLabel(r.cx, r.cy, catThick, text, color, m); // tall enough, but text wider than bar → chip
-            } else if (opt.labelOverflow === "outside") {
-              pushOutsideLabel(r.cx, r.cy, catThick / 2, text, m);
             } else {
               chips.push({ c: isColumn ? r.cy : r.cx, cx: r.cx, cy: r.cy, text, fill: color, meta: m });
             }
@@ -340,9 +340,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
           if (text) {
             const big = Math.abs(raw) * vScale >= MIN_SEG_FOR_LABEL;
-            if (big && labelFits(text, laneThick)) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
+            if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, laneThick / 2, text, m);
+            else if (big && labelFits(text, laneThick)) pushCenteredLabel(r.cx, r.cy, laneThick, text, m);
             else if (big) pushChipLabel(r.cx, r.cy, laneThick, text, color, m);
-            else if (opt.labelOverflow === "outside") pushOutsideLabel(r.cx, r.cy, laneThick / 2, text, m);
             else pushChipLabel(r.cx, r.cy, laneThick, text, color, m);
           }
         }

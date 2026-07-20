@@ -152,6 +152,13 @@ describe("layoutBarColumn — small labels & fonts", () => {
     expect(labels.some((l) => l.bg)).toBe(false);
   });
 
+  it("outside moves ALL labels out, including big segments (not just small ones)", () => {
+    // Default model: every segment is large; with outside none should be a centered chip.
+    const labels = segLabels(layoutBarColumn(model({ labelOverflow: "outside" })));
+    expect(labels.length).toBe(4);
+    expect(labels.every((l) => !l.bg)).toBe(true); // no chips → all placed outside
+  });
+
   it("applies font family and per-type sizes", () => {
     const prims = layoutBarColumn(model({ fontFamily: "Arial", segmentFontSize: 11, totalFontSize: 14 }));
     const seg = prims.find((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "segmentLabel");
