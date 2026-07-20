@@ -38,6 +38,7 @@ the corresponding 🔵 → ✅ in [FEATURES.md](FEATURES.md).
 - [ ] **Connectors** (stacked column only) draw between adjacent stacks.
 - [ ] **Reference line**: type a value → red labelled line at that value (horizontal for column,
       vertical for bar); clear it → line disappears; a value above the axis max shows nothing.
+- [ ] **Axis min / max**: fix either end → bars rescale to the fixed range; blank = auto.
 
 ## 4. Negative values
 - [ ] Enter negative numbers → bars extend **below** the zero baseline; axis spans below zero.
@@ -64,4 +65,4 @@ the corresponding 🔵 → ✅ in [FEATURES.md](FEATURES.md).
 
 ## Known-open (not built — don't test yet)
 Difference arrows, CAGR arrows, combination line series, waterfall subtotal columns,
-per-segment color override, error bars, manual axis min/max. See [FEATURES.md](FEATURES.md).
+per-segment color override, error bars. See [FEATURES.md](FEATURES.md).

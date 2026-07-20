@@ -46,6 +46,8 @@ export interface ChartOptions {
   showValueAxis: boolean; // value-axis tick labels
   showConnectors: boolean; // connector lines between stacked segments across categories
   referenceValue: number | null; // horizontal reference/target line at this value (null = off)
+  axisMin: number | null; // fix the value-axis minimum (null = auto)
+  axisMax: number | null; // fix the value-axis maximum (null = auto)
   labelOverflow: "inside" | "outside"; // small-segment labels: keep inside (chip + offset) or place outside
   fontFamily: string; // font for all labels
   segmentFontSize: number; // pt, segment/value labels
@@ -122,6 +124,8 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   showValueAxis: false,
   showConnectors: false,
   referenceValue: null,
+  axisMin: null,
+  axisMax: null,
   labelOverflow: "inside",
   fontFamily: "Roboto",
   segmentFontSize: 9,

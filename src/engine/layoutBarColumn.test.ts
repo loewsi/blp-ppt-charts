@@ -211,6 +211,29 @@ describe("layoutBarColumn — reference line", () => {
   });
 });
 
+describe("layoutBarColumn — manual axis min/max", () => {
+  // Column chart: a fixed, larger axisMax makes every segment shorter than with auto scale.
+  it("fixing a larger axisMax shrinks the bars", () => {
+    const auto = segRects(layoutBarColumn(model({ grouping: "clustered" })));
+    const fixed = segRects(layoutBarColumn(model({ grouping: "clustered", axisMax: 200 })));
+    const h = (p: typeof auto, si: number, ci: number) =>
+      p.find((r) => r.meta?.seriesIndex === si && r.meta?.categoryIndex === ci)!.h;
+    expect(h(fixed, 1, 1)).toBeLessThan(h(auto, 1, 1)); // value 40 on a 0..200 axis vs auto
+  });
+
+  it("axisMin below zero opens space under the baseline", () => {
+    const prims = layoutBarColumn(model({ grouping: "clustered", axisMin: -50 }));
+    const baseline = prims.find((s) => s.kind === "line" && s.meta?.objectType === "baseline");
+    const baseY = baseline && baseline.kind === "line" ? baseline.y1 : 0;
+    // With min −50 and a 300pt-tall plot, the zero baseline sits well below the plot top.
+    expect(baseY).toBeGreaterThan(0);
+  });
+
+  it("guards against an inverted/empty range (max <= min)", () => {
+    expect(() => layoutBarColumn(model({ axisMin: 100, axisMax: 100 }))).not.toThrow();
+  });
+});
+
 describe("niceTicks", () => {
   it("returns [0] for non-positive max", () => {
     expect(niceTicks(0)).toEqual([0]);

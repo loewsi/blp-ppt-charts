@@ -44,7 +44,8 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Axis, gridlines, baseline
 - 🔵 Baseline; optional value axis (auto scale, ticks); optional gridlines
-- ⬜ Manual min/max/tick; secondary axis; axis break; axis title
+- 🔵 Manual axis min/max  *(new)*
+- ⬜ Manual tick step; secondary axis; axis break; axis title
 
 ### Number formatting (shared engine)
 - 🔵 Decimals, k/M scale, prefix, suffix, hide-zero

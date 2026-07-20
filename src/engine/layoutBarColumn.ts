@@ -105,6 +105,12 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     vMax = mx;
     vMin = Math.min(0, mn);
   }
+  // Manual axis overrides (auto scale unless the user fixes an end). Not for 100%.
+  if (!norm100) {
+    if (opt.axisMax != null && isFinite(opt.axisMax)) vMax = opt.axisMax;
+    if (opt.axisMin != null && isFinite(opt.axisMin)) vMin = opt.axisMin;
+    if (vMax <= vMin) vMax = vMin + 1; // keep a positive range
+  }
   const vRange = vMax - vMin || 1;
   const vScale = valExtent / vRange;
   const yv = (v: number) => plotTop + (vMax - v) * vScale; // column: value -> y

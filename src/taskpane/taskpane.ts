@@ -197,7 +197,8 @@ function show(which: "app" | "unsupported"): void {
 }
 
 const OPTION_IDS = [
-  "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optTotals", "optLabels", "optReverse",
+  "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
+  "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optConnectors", "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
@@ -489,13 +490,18 @@ function readOptions(): ChartOptions {
   const v = (id: string) => (byId(id) as HTMLInputElement | HTMLSelectElement).value;
   const c = (id: string) => (byId(id) as HTMLInputElement).checked;
   const gapPct = Number(v("optGap"));
-  const refRaw = v("optRefValue").trim();
-  const refNum = Number(refRaw);
+  const numOrNull = (id: string): number | null => {
+    const raw = v(id).trim();
+    const n = Number(raw);
+    return raw !== "" && isFinite(n) ? n : null;
+  };
   return {
     orientation: v("optOrientation") as Orientation,
     grouping: v("optGrouping") as Grouping,
     gap: Math.min(0.9, Math.max(0, (isFinite(gapPct) ? gapPct : 35) / 100)),
-    referenceValue: refRaw !== "" && isFinite(refNum) ? refNum : null,
+    referenceValue: numOrNull("optRefValue"),
+    axisMin: numOrNull("optAxisMin"),
+    axisMax: numOrNull("optAxisMax"),
     showTotals: c("optTotals"),
     showValueLabels: c("optLabels"),
     reverseCategories: c("optReverse"),
@@ -526,6 +532,8 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optGrouping") as HTMLSelectElement).value = o.grouping;
   (byId("optGap") as HTMLInputElement).value = String(Math.round(o.gap * 100));
   (byId("optRefValue") as HTMLInputElement).value = o.referenceValue == null ? "" : String(o.referenceValue);
+  (byId("optAxisMin") as HTMLInputElement).value = o.axisMin == null ? "" : String(o.axisMin);
+  (byId("optAxisMax") as HTMLInputElement).value = o.axisMax == null ? "" : String(o.axisMax);
   (byId("optTotals") as HTMLInputElement).checked = o.showTotals;
   (byId("optLabels") as HTMLInputElement).checked = o.showValueLabels;
   (byId("optReverse") as HTMLInputElement).checked = o.reverseCategories;
