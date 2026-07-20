@@ -34,7 +34,6 @@ let currentData: ChartData = defaultData();
 let currentBox: ChartBox = { ...DEFAULT_BOX };
 let currentId: string | null = null; // null => "insert new" mode
 let currentName = "";
-let cachedModels: ChartModel[] = [];
 let busy = false; // guards against the selection handler firing during our own edits
 let applyTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -206,16 +205,12 @@ const OPTION_IDS = [
 
 function wire(): void {
   byId("insertBtn").addEventListener("click", () => guard(insertChart));
-  byId("editSelectedBtn").addEventListener("click", () => guard(editSelected));
-  byId("refreshBtn").addEventListener("click", () => guard(refreshList));
-  byId("loadBtn").addEventListener("click", () => guard(loadSelected));
   byId("addSeriesBtn").addEventListener("click", () => addSeries());
   byId("removeSeriesBtn").addEventListener("click", () => removeSeries());
   byId("addCatBtn").addEventListener("click", () => addCategory());
   byId("removeCatBtn").addEventListener("click", () => removeCategory());
   byId("transposeBtn").addEventListener("click", () => transpose());
   byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
-  byId("pasteLoadBtn").addEventListener("click", () => loadPasted());
   // Live apply: changing any style/format control re-renders the current chart.
   OPTION_IDS.forEach((id) => byId(id).addEventListener("change", () => scheduleApply()));
 }
@@ -329,45 +324,6 @@ async function applyColors(): Promise<void> {
   status(`Applied ${scheme} colors.`);
 }
 
-// ---- paste fallback (RevoGrid also pastes natively into cells) -----------
-function loadPasted(): void {
-  const ta = byId("pasteArea") as HTMLTextAreaElement;
-  const parsed = parsePasted(ta.value);
-  if (!parsed) {
-    status("Couldn't read that. Paste a grid with a header row and a header column.", true);
-    return;
-  }
-  currentData = parsed;
-  renderGrid();
-  ta.value = "";
-  const details = byId("pasteArea").closest("details");
-  if (details) (details as HTMLDetailsElement).open = false;
-  scheduleApply();
-  status(
-    `Loaded ${parsed.categories.length} categories × ${parsed.series.length} series.`
-  );
-}
-
-function parsePasted(text: string): ChartData | null {
-  const rows = text
-    .replace(/\r/g, "")
-    .split("\n")
-    .filter((r) => r.trim().length > 0)
-    .map((r) => r.split("\t"));
-  if (rows.length < 2 || rows[0].length < 2) return null;
-
-  const categories = rows[0].slice(1).map((c, i) => c.trim() || `Cat ${i + 1}`);
-  const series: Series[] = rows.slice(1).map((r, ri) => ({
-    name: (r[0] || "").trim() || `Series ${ri + 1}`,
-    color: PALETTE[ri % PALETTE.length],
-    values: categories.map((_, ci) => {
-      const n = Number((r[ci + 1] || "").replace(/[,\s%]/g, ""));
-      return isFinite(n) ? n : 0;
-    }),
-  }));
-  return { type: "barColumn", categories, series };
-}
-
 // ---- PowerPoint operations ----------------------------------------------
 async function insertChart(): Promise<void> {
   await doInsert({});
@@ -445,49 +401,6 @@ async function updateChart(): Promise<void> {
   currentData = data;
 }
 
-async function editSelected(): Promise<void> {
-  await withSlide(async (context, slide) => {
-    const id = await getSelectedChartId(context);
-    if (!id) {
-      status("Click a chart on the slide first, then press this.", true);
-      return;
-    }
-    const models = await getSlideCharts(context, slide);
-    const model = models.find((m) => m.id === id);
-    if (!model) {
-      status("That selection isn't a SlideChart.", true);
-      return;
-    }
-    applyModel(model);
-    status(`Editing ${model.name || "chart"} (selected on slide).`);
-  });
-}
-
-async function refreshList(): Promise<void> {
-  cachedModels = await withSlide((context, slide) => getSlideCharts(context, slide));
-  const sel = byId("chartSelect") as HTMLSelectElement;
-  sel.innerHTML = "";
-  if (cachedModels.length === 0) {
-    sel.appendChild(new Option("(no charts on this slide)", ""));
-  } else {
-    cachedModels.forEach((m) => {
-      const label = `${m.name || "Chart"} — ${m.data.series.map((s) => s.name).join(", ")}`;
-      sel.appendChild(new Option(label, m.id));
-    });
-  }
-  status(`Found ${cachedModels.length} chart(s) on this slide.`);
-}
-
-function loadSelected(): void {
-  const sel = byId("chartSelect") as HTMLSelectElement;
-  const model = cachedModels.find((m) => m.id === sel.value);
-  if (!model) {
-    status("Pick a chart from the list first (press ↻ to rescan).", true);
-    return;
-  }
-  applyModel(model);
-  status(`Editing ${model.name || "chart"}.`);
-}
 
 function applyModel(model: ChartModel): void {
   currentData = model.data;

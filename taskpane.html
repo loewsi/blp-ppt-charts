@@ -18,18 +18,6 @@
       <p id="editing" class="editing">New chart — not inserted yet</p>
 
       <section class="panel">
-        <label class="lbl" for="chartSelect">Edit an existing chart</label>
-        <div class="row">
-          <button id="editSelectedBtn" class="ghost wide">Edit selected chart</button>
-        </div>
-        <div class="row">
-          <select id="chartSelect"><option value="">(none loaded)</option></select>
-          <button id="refreshBtn" class="ghost" title="Rescan the current slide">&#x21bb;</button>
-          <button id="loadBtn" class="ghost">Load</button>
-        </div>
-      </section>
-
-      <section class="panel">
         <div id="grid" class="grid"></div>
         <div class="row">
           <button id="addSeriesBtn" class="ghost">+ Series</button>
@@ -38,12 +26,6 @@
           <button id="removeCatBtn" class="ghost">− Category</button>
           <button id="transposeBtn" class="ghost" title="Swap rows and columns">Transpose</button>
         </div>
-        <details class="paste">
-          <summary>Paste from Excel</summary>
-          <textarea id="pasteArea" rows="4"
-            placeholder="Copy a range in Excel and paste here.&#10;Top row = category names, first column = series names."></textarea>
-          <button id="pasteLoadBtn" class="ghost wide">Load pasted data</button>
-        </details>
       </section>
 
       <section class="panel">
@@ -130,7 +112,6 @@
           <button id="applyColorsBtn" class="ghost">Apply</button>
         </div>
         <div id="seriesColors" class="swatches"></div>
-        <p class="hint">Style changes apply when you Insert or Update.</p>
       </section>
 
       <section class="panel actions">
