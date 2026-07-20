@@ -4,6 +4,7 @@ import type {
   ChartBox,
   Series,
   ChartOptions,
+  ChartType,
   Orientation,
   Grouping,
 } from "../model/chartModel";
@@ -11,6 +12,7 @@ import {
   DEFAULT_BOX,
   PALETTE,
   PALETTES,
+  CHART_TYPES,
   CURRENT_SCHEMA_VERSION,
   defaultData,
   defaultOptions,
@@ -442,8 +444,9 @@ function applyModel(model: ChartModel): void {
   setMode();
 }
 
-function readChartType(): "barColumn" | "waterfall" {
-  return (byId("chartType") as HTMLSelectElement).value === "waterfall" ? "waterfall" : "barColumn";
+function readChartType(): ChartType {
+  const val = (byId("chartType") as HTMLSelectElement).value as ChartType;
+  return CHART_TYPES.includes(val) ? val : "barColumn";
 }
 
 async function withSlide<T>(
