@@ -125,6 +125,7 @@ function hidePane(): void {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 let lastPolled: ChartBox | null = null;
+let lastRenderedBox: ChartBox | null = null; // the chart's box right after our last draw
 
 async function pollResize(): Promise<void> {
   if (busy || !currentId) return;
@@ -135,10 +136,20 @@ async function pollResize(): Promise<void> {
     return;
   }
   if (!box) return;
-  const settled = lastPolled !== null && sameBox(box, lastPolled);
-  const changed = !sameBox(box, currentBox);
+  // Compare against what WE last rendered (not the model box) so normal edits
+  // don't look like resizes and we never drift/shrink.
+  if (!lastRenderedBox) {
+    lastRenderedBox = box;
+    return;
+  }
+  if (sameBox(box, lastRenderedBox)) return; // no resize since our last draw
+  if (!lastPolled || !sameBox(box, lastPolled)) {
+    lastPolled = box; // still dragging — wait for it to settle
+    return;
+  }
   lastPolled = box;
-  if (settled && changed) await updateChart(); // recompute at the live size
+  currentBox = box; // adopt the size the user dragged to
+  await updateChart(); // redraws at currentBox and refreshes lastRenderedBox
 }
 
 function sameBox(a: ChartBox, b: ChartBox): boolean {
@@ -379,6 +390,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
       await drawChart(context, slide, model);
       currentId = model.id;
       currentName = name;
+      lastRenderedBox = await getChartBox(context, slide, model.id); // baseline for resize detection
     });
   } finally {
     busy = false;
@@ -397,8 +409,7 @@ async function updateChart(): Promise<void> {
   try {
     await withSlide(async (context, slide) => {
       const opts = readOptions();
-      const liveBox = await getChartBox(context, slide, currentId!); // respects moves/resizes
-      const box = liveBox ?? currentBox;
+      const box = currentBox; // redraw at the intended box; the resize poll updates currentBox
       // Remember where the legend sits, so a redraw doesn't snap it back to default.
       const savedLegend = opts.showLegend ? await getPartBox(context, slide, currentId!, "legend") : null;
       await deleteChart(context, slide, currentId!);
@@ -411,13 +422,13 @@ async function updateChart(): Promise<void> {
         options: opts,
       };
       await drawChart(context, slide, model);
-      currentBox = box;
       if (savedLegend) {
         const nowLegend = await getPartBox(context, slide, currentId!, "legend");
         if (nowLegend) {
           await translatePart(context, slide, currentId!, "legend", savedLegend.left - nowLegend.left, savedLegend.top - nowLegend.top);
         }
       }
+      lastRenderedBox = await getChartBox(context, slide, currentId!); // baseline for resize detection
     });
   } finally {
     busy = false;
