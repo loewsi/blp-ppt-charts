@@ -12,7 +12,6 @@ const PAD_MAIN = 22; // value-axis end: room for totals
 const PAD_CROSS = 26; // category-axis end: room for category labels
 const PAD_MINOR = 6;
 const MIN_SEG_FOR_LABEL = 12; // pt along the value axis
-const MIN_LABEL_W = 22; // minimum label box width (pt)
 
 /**
  * One engine for the whole column/bar family. Orientation (column|bar) and
@@ -101,24 +100,25 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const fam = opt.fontFamily;
   const labelH = opt.segmentFontSize + 5; // approx label box height for collision checks
 
-  function pushCenteredLabel(cx: number, cy: number, thick: number, text: string, meta: ShapeMeta) {
-    const w = Math.max(isColumn ? thick : 64, MIN_LABEL_W); // min box width; centered on (cx, cy)
+  function pushCenteredLabel(cx: number, cy: number, _thick: number, text: string, meta: ShapeMeta) {
+    const w = estTextW(text, opt.segmentFontSize); // box only as wide as the text, centered on (cx, cy)
     prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
   }
 
   // Small segment, kept inside: a chip filled with the segment color so the
   // white value stays readable even when nudged off-center to dodge a neighbour.
-  function pushChipLabel(cx: number, cy: number, thick: number, text: string, fill: string, meta: ShapeMeta) {
-    const w = Math.max(isColumn ? thick : 64, MIN_LABEL_W);
+  function pushChipLabel(cx: number, cy: number, _thick: number, text: string, fill: string, meta: ShapeMeta) {
+    const w = estTextW(text, opt.segmentFontSize);
     prims.push({ kind: "text", x: cx - w / 2, y: cy - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, bg: fill, meta });
   }
 
   // Small segment: put the value just outside the column/bar instead of hiding it.
   function pushOutsideLabel(cx: number, cy: number, halfThick: number, text: string, meta: ShapeMeta) {
+    const w = estTextW(text, opt.segmentFontSize);
     if (isColumn) {
-      prims.push({ kind: "text", x: cx + halfThick + 3, y: cy - 7, w: 46, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "left", family: fam, meta });
+      prims.push({ kind: "text", x: cx + halfThick + 3, y: cy - 7, w, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "left", family: fam, meta });
     } else {
-      prims.push({ kind: "text", x: cx - 23, y: cy - halfThick - 14, w: 46, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
+      prims.push({ kind: "text", x: cx - w / 2, y: cy - halfThick - 14, w, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta });
     }
   }
 
@@ -295,4 +295,9 @@ export function niceTicks(max: number, target = 4): number[] {
 
 function safe(v: number | undefined): number {
   return typeof v === "number" && isFinite(v) ? v : 0;
+}
+
+/** Rough width (pt) of a text box sized to its content, with a little padding. */
+function estTextW(text: string, size: number): number {
+  return Math.max(10, Math.round(text.length * size * 0.62) + 6);
 }
