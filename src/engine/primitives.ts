@@ -65,7 +65,23 @@ export interface LinePrimitive {
   y2: number;
   color: string;
   weight: number; // points
+  dashed?: boolean; // rendered as a dashed line (used for leaders / CAGR spans)
   meta?: ShapeMeta;
 }
 
-export type Primitive = RectPrimitive | TextPrimitive | LinePrimitive;
+/** A line from (x1,y1)→(x2,y2) with a filled triangular head at the "to" end
+ *  (and optionally the "from" end). Rendered as a line body + rotated triangle(s). */
+export interface ArrowPrimitive {
+  kind: "arrow";
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+  weight: number; // points
+  headSize?: number; // triangle height in points (default 7)
+  doubleHeaded?: boolean; // head at both ends
+  meta?: ShapeMeta;
+}
+
+export type Primitive = RectPrimitive | TextPrimitive | LinePrimitive | ArrowPrimitive;
