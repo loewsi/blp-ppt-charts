@@ -315,6 +315,23 @@ describe("layoutBarColumn — line/combination series", () => {
     expect(totals.find((t) => t.text === "10")).toBeTruthy();
   });
 
+  it("secondary axis keeps big line values off the primary bar scale", () => {
+    const data = {
+      type: "barColumn" as const,
+      categories: ["A", "B"],
+      series: [
+        { name: "Bars", color: "#111", values: [10, 20] },
+        { name: "Line", color: "#E00", values: [1000, 2000], kind: "line" as const },
+      ],
+    };
+    const barH = (secondary: boolean) => {
+      const rs = segRects(layoutBarColumn(model({ grouping: "clustered", lineSecondaryAxis: secondary }, data)));
+      return rs.find((r) => r.meta?.seriesIndex === 0 && r.meta?.categoryIndex === 1)!.h;
+    };
+    // Shared axis: the huge line value squashes the bars. Secondary axis: bars keep their own scale → taller.
+    expect(barH(true)).toBeGreaterThan(barH(false));
+  });
+
   it("expands the axis so a tall line value still fits", () => {
     const tall = {
       type: "barColumn" as const,

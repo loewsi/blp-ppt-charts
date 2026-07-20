@@ -46,6 +46,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const barOrder = serOrder.filter((si) => !isLine(si)); // series drawn as bars, in stack/cluster order
   const lineSeries = data.series.map((_, i) => i).filter(isLine); // series drawn as lines
   const nBar = barOrder.length;
+  const useSecondary = opt.lineSecondaryAxis && lineSeries.length > 0; // line on its own right axis
 
   // Reserved bands (only when a feature is on, so defaults are unchanged).
   const axisBand = opt.showValueAxis ? 28 : 0;
@@ -61,6 +62,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   if (opt.showValueAxis) {
     if (isColumn) insLeft += axisBand;
     else insBottom += axisBand;
+    if (useSecondary && isColumn) insRight += axisBand; // right-hand secondary axis labels
   }
   if (opt.showLegend) {
     if (legendPos === "top") insTop += legendH;
@@ -117,12 +119,34 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     vMax = mx;
     vMin = Math.min(0, mn);
   }
-  // Fold line-series values into the range so the line always fits on the axis.
-  for (const si of lineSeries)
-    for (const v of data.series[si].values) {
-      vMax = Math.max(vMax, safe(v));
-      vMin = Math.min(0, vMin, safe(v));
+  // Fold line-series values into the primary range so the line fits — unless the
+  // line rides its own secondary axis.
+  if (!useSecondary)
+    for (const si of lineSeries)
+      for (const v of data.series[si].values) {
+        vMax = Math.max(vMax, safe(v));
+        vMin = Math.min(0, vMin, safe(v));
+      }
+
+  // Secondary axis range (line series only).
+  let lMin = 0;
+  let lMax = 1;
+  if (useSecondary) {
+    lMin = Infinity;
+    lMax = -Infinity;
+    for (const si of lineSeries)
+      for (const v of data.series[si].values) {
+        const x = safe(v);
+        lMin = Math.min(lMin, x);
+        lMax = Math.max(lMax, x);
+      }
+    if (!isFinite(lMin)) {
+      lMin = 0;
+      lMax = 1;
     }
+    lMin = Math.min(0, lMin);
+    if (lMax <= lMin) lMax = lMin + 1;
+  }
   // Manual axis overrides (auto scale unless the user fixes an end). Not for 100%.
   if (!norm100) {
     if (opt.axisMax != null && isFinite(opt.axisMax)) vMax = opt.axisMax;
@@ -133,6 +157,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const vScale = valExtent / vRange;
   const yv = (v: number) => plotTop + (vMax - v) * vScale; // column: value -> y
   const xv = (v: number) => plotLeft + (v - vMin) * vScale; // bar: value -> x
+  // Line series map through the secondary axis when enabled, else the primary one.
+  const lScale = plotH / (lMax - lMin || 1);
+  const lineY = (v: number) => (useSecondary ? plotTop + (lMax - v) * lScale : yv(v));
 
   // Emit a rectangle for a segment/bar; returns its center for label placement.
   function emitRect(catStart: number, thick: number, v0: number, v1: number, fill: string, meta: ShapeMeta) {
@@ -430,13 +457,21 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     }
   }
 
+  // Secondary axis tick labels on the right (line series scale).
+  if (useSecondary && opt.showValueAxis && isColumn) {
+    for (const t of axisTicks(lMin, lMax, 4)) {
+      const y = plotTop + (lMax - t) * lScale;
+      prims.push({ kind: "text", x: plotLeft + plotW + 3, y: y - 7, w: axisBand - 3, h: 14, text: formatNumber(t, { ...nf, hideZero: false }), color: LABEL_DARK, size: 8, bold: false, align: "left", family: fam, meta: { objectType: "valueAxis" } });
+    }
+  }
+
   // Line series (combination charts): a polyline across category centers with
   // markers + value labels, drawn on top of the bars. Column orientation only.
   for (const si of lineSeries) {
     const s = data.series[si];
     const pts = order.map((ci, k) => ({
       x: plotLeft + k * slot + slot / 2,
-      y: yv(safe(s.values[ci])),
+      y: lineY(safe(s.values[ci])),
       raw: safe(s.values[ci]),
       ci,
     }));

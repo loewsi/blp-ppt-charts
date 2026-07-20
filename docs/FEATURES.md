@@ -85,8 +85,9 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - 🔵 Negative values below baseline
 - 🔵 Reverse series (stacking/cluster order), separate from reverse categories *(new)*
 - 🔵 100% stacked shows the absolute total on top *(fixed)*
-- ⬜ Combination — one series as a line
-- ⬜ Line markers, secondary axis; category gaps / visual grouping
+- 🔵 Combination — mark any series as a line (per-series toggle by the color swatch) *(new)*
+- 🔵 Line series secondary (right-hand) axis *(new)*
+- ⬜ Category gaps / visual grouping; line area fill (needs a polygon primitive)
 
 ### Waterfall — ⚠️ needs rework (Silvan: "logic does not work yet")
 - ⬜ Use the same categories/series grid + naming as the column family

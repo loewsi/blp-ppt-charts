@@ -108,6 +108,9 @@ button.wide { width: 100%; }
 .swatches { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .swatch { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink); }
 .swatch input[type="color"] { width: 26px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+.swatch > span { flex: 1; }
+.chk.mini { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted, #667); }
+.chk.mini input { margin: 0; }
 
 .paste { margin-top: 10px; }
 .paste summary {

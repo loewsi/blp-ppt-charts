@@ -80,6 +80,7 @@ let host: HTMLElement;
 let onChange: (() => void) | undefined;
 let cells: Cells = [[""]];
 let seriesColors: string[] = [];
+let seriesKinds: (("bar" | "line") | undefined)[] = [];
 let active = { r: 1, c: 1 };
 let anchor = { r: 1, c: 1 };
 let editing = false;
@@ -94,16 +95,25 @@ export function mountGrid(container: HTMLElement, changed?: () => void): void {
 export function setGridData(data: ChartData): void {
   cells = cellsFromData(data);
   seriesColors = data.series.map((s) => s.color);
+  seriesKinds = data.series.map((s) => s.kind);
   clampActive();
   render();
 }
 
 export function getGridData(): ChartData {
-  return dataFromCells(cells, seriesColors);
+  const d = dataFromCells(cells, seriesColors);
+  d.series.forEach((s, i) => {
+    if (seriesKinds[i]) s.kind = seriesKinds[i];
+  });
+  return d;
 }
 
 export function setSeriesColor(index: number, color: string): void {
   seriesColors[index] = color;
+}
+
+export function setSeriesKind(index: number, kind: "bar" | "line"): void {
+  seriesKinds[index] = kind;
 }
 
 /** The active cell (row 0 = categories, col 0 = series). Used by remove-at-cursor. */

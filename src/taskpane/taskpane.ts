@@ -30,7 +30,7 @@ import {
   repairDuplicateChartIds,
 } from "../engine/persistence";
 import { newId } from "../util/id";
-import { mountGrid, setGridData, getGridData, setSeriesColor, getActive } from "./grid";
+import { mountGrid, setGridData, getGridData, setSeriesColor, setSeriesKind, getActive } from "./grid";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
@@ -215,7 +215,7 @@ const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
-  "optReverseSeries", "optRefColor",
+  "optLineSecondaryAxis", "optReverseSeries", "optRefColor",
   "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
   "labelOverflow",
@@ -262,8 +262,23 @@ function renderSeriesColors(): void {
     });
     const name = document.createElement("span");
     name.textContent = s.name;
+    // Per-series line toggle (combination charts): draw this series as a line.
+    const lineWrap = document.createElement("label");
+    lineWrap.className = "chk mini";
+    const lineChk = document.createElement("input");
+    lineChk.type = "checkbox";
+    lineChk.checked = s.kind === "line";
+    lineChk.addEventListener("change", () => {
+      setSeriesKind(i, lineChk.checked ? "line" : "bar");
+      currentData = readGrid();
+      scheduleApply();
+      status(lineChk.checked ? `${s.name} shown as a line.` : `${s.name} shown as bars.`);
+    });
+    lineWrap.appendChild(lineChk);
+    lineWrap.appendChild(document.createTextNode("line"));
     row.appendChild(sw);
     row.appendChild(name);
+    row.appendChild(lineWrap);
     box.appendChild(row);
   });
 }
@@ -539,6 +554,7 @@ function readOptions(): ChartOptions {
     showGridlines: c("optGridlines"),
     showValueAxis: c("optAxis"),
     showAxisLine: c("optAxisLine"),
+    lineSecondaryAxis: c("optLineSecondaryAxis"),
     showConnectors: c("optConnectors"),
     reverseSeries: c("optReverseSeries"),
     referenceColor: v("optRefColor") || "#E8412C",
@@ -585,6 +601,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optGridlines") as HTMLInputElement).checked = o.showGridlines;
   (byId("optAxis") as HTMLInputElement).checked = o.showValueAxis;
   (byId("optAxisLine") as HTMLInputElement).checked = o.showAxisLine;
+  (byId("optLineSecondaryAxis") as HTMLInputElement).checked = o.lineSecondaryAxis;
   (byId("optConnectors") as HTMLInputElement).checked = o.showConnectors;
   (byId("optReverseSeries") as HTMLInputElement).checked = o.reverseSeries;
   (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";
