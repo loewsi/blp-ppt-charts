@@ -75,7 +75,54 @@ Office.onReady((info) => {
   // Opt-in: no shape-resize event exists in Office.js, so we poll the chart's
   // size and re-lay-out once it settles (no live preview, so nothing jumps).
   setInterval(() => void pollResize(), 1000);
+
+  // Ribbon insert commands run in this same (shared) runtime.
+  registerRibbonActions();
+  // Keep the runtime alive so selection show/hide works from document open.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (Office as any).addin?.setStartupBehavior?.((Office as any).StartupBehavior.load);
+  } catch {
+    // Not a shared-runtime host; falls back to a manually opened pane.
+  }
 });
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function registerRibbonActions(): void {
+  const actions = (Office as any).actions;
+  if (!actions?.associate) return;
+  const mk = (over: Partial<ChartOptions>) => (event: { completed?: () => void }) => {
+    void (async () => {
+      try {
+        await doInsert(over);
+        showPane();
+      } finally {
+        event.completed?.();
+      }
+    })();
+  };
+  actions.associate("insertStackedColumn", mk({ orientation: "column", grouping: "stacked" }));
+  actions.associate("insertClusteredColumn", mk({ orientation: "column", grouping: "clustered" }));
+  actions.associate("insertStacked100", mk({ orientation: "column", grouping: "stacked100" }));
+  actions.associate("insertBar", mk({ orientation: "bar", grouping: "stacked" }));
+}
+
+function showPane(): void {
+  try {
+    (Office as any).addin?.showAsTaskpane?.();
+  } catch {
+    /* not shared runtime */
+  }
+}
+
+function hidePane(): void {
+  try {
+    (Office as any).addin?.hide?.();
+  } catch {
+    /* not shared runtime */
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 let lastPolled: ChartBox | null = null;
 
@@ -108,12 +155,17 @@ async function onSelectionChanged(): Promise<void> {
   try {
     await withSlide(async (context, slide) => {
       const id = await getSelectedChartId(context);
-      if (!id || id === currentId) return;
+      if (!id) {
+        hidePane(); // clicked away from any chart
+        return;
+      }
+      showPane(); // a chart is selected → open the editor
+      if (id === currentId) return;
       const models = await getSlideCharts(context, slide);
       const model = models.find((m) => m.id === id);
       if (model) {
         applyModel(model);
-        status(`Editing ${model.name || "chart"} (selected on slide).`);
+        status(`Editing ${model.name || "chart"}.`);
       }
     });
   } catch {
@@ -298,12 +350,16 @@ function parsePasted(text: string): ChartData | null {
 
 // ---- PowerPoint operations ----------------------------------------------
 async function insertChart(): Promise<void> {
-  // Always start a fresh default chart; edits then apply live. Duplicate an
-  // existing chart by copy-pasting it on the slide.
+  await doInsert({});
+}
+
+/** Insert a fresh chart of a given type; edits then apply live. Duplicate an
+ *  existing chart by copy-pasting it on the slide. */
+async function doInsert(over: Partial<ChartOptions>): Promise<void> {
   currentData = defaultData();
   currentName = "";
   currentId = null;
-  setOptionsUI(defaultOptions());
+  setOptionsUI({ ...defaultOptions(), ...over });
   renderGrid();
   const data = readGrid();
   const box: ChartBox = { ...DEFAULT_BOX };

@@ -7,11 +7,11 @@
   xsi:type="TaskPaneApp">
 
   <Id>b1f2c3d4-5e6a-47b8-9c0d-1a2b3c4d5e6f</Id>
-  <Version>0.1.0.0</Version>
+  <Version>1.0.0.0</Version>
   <ProviderName>BLP Digital AG</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="SlideChart" />
-  <Description DefaultValue="Live-linked charts for PowerPoint (Windows + Mac). v1: stacked column." />
+  <Description DefaultValue="Live-linked charts for PowerPoint (Windows + Mac). Column/bar family." />
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png" />
   <SupportUrl DefaultValue="https://blp-digital.com" />
@@ -31,10 +31,18 @@
   <Permissions>ReadWriteDocument</Permissions>
 
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.1">
+        <bt:Set Name="SharedRuntime" MinVersion="1.1" />
+      </bt:Sets>
+    </Requirements>
     <Hosts>
       <Host xsi:type="Presentation">
+        <Runtimes>
+          <Runtime resid="Taskpane.Url" lifetime="long" />
+        </Runtimes>
         <DesktopFormFactor>
-          <FunctionFile resid="Commands.Url" />
+          <FunctionFile resid="Taskpane.Url" />
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <OfficeTab id="TabHome">
               <Group id="BLP.Group">
@@ -44,6 +52,60 @@
                   <bt:Image size="32" resid="Icon.32" />
                   <bt:Image size="80" resid="Icon.80" />
                 </Icon>
+                <Control xsi:type="Menu" id="BLP.InsertMenu">
+                  <Label resid="BLP.InsertLabel" />
+                  <Supertip>
+                    <Title resid="BLP.InsertLabel" />
+                    <Description resid="BLP.InsertTip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16" />
+                    <bt:Image size="32" resid="Icon.32" />
+                    <bt:Image size="80" resid="Icon.80" />
+                  </Icon>
+                  <Items>
+                    <Item id="BLP.InsertStacked">
+                      <Label resid="BLP.StackedLabel" />
+                      <Supertip>
+                        <Title resid="BLP.StackedLabel" />
+                        <Description resid="BLP.StackedLabel" />
+                      </Supertip>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>insertStackedColumn</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="BLP.InsertClustered">
+                      <Label resid="BLP.ClusteredLabel" />
+                      <Supertip>
+                        <Title resid="BLP.ClusteredLabel" />
+                        <Description resid="BLP.ClusteredLabel" />
+                      </Supertip>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>insertClusteredColumn</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="BLP.InsertHundred">
+                      <Label resid="BLP.HundredLabel" />
+                      <Supertip>
+                        <Title resid="BLP.HundredLabel" />
+                        <Description resid="BLP.HundredLabel" />
+                      </Supertip>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>insertStacked100</FunctionName>
+                      </Action>
+                    </Item>
+                    <Item id="BLP.InsertBar">
+                      <Label resid="BLP.BarLabel" />
+                      <Supertip>
+                        <Title resid="BLP.BarLabel" />
+                        <Description resid="BLP.BarLabel" />
+                      </Supertip>
+                      <Action xsi:type="ExecuteFunction">
+                        <FunctionName>insertBar</FunctionName>
+                      </Action>
+                    </Item>
+                  </Items>
+                </Control>
                 <Control xsi:type="Button" id="BLP.OpenTaskpane">
                   <Label resid="BLP.OpenLabel" />
                   <Supertip>
@@ -80,9 +142,15 @@
       <bt:ShortStrings>
         <bt:String id="BLP.GroupLabel" DefaultValue="SlideChart" />
         <bt:String id="BLP.OpenLabel" DefaultValue="Chart editor" />
+        <bt:String id="BLP.InsertLabel" DefaultValue="Insert chart" />
+        <bt:String id="BLP.StackedLabel" DefaultValue="Stacked column" />
+        <bt:String id="BLP.ClusteredLabel" DefaultValue="Clustered column" />
+        <bt:String id="BLP.HundredLabel" DefaultValue="100% stacked column" />
+        <bt:String id="BLP.BarLabel" DefaultValue="Bar (horizontal)" />
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="BLP.OpenTip" DefaultValue="Open the SlideChart editor." />
+        <bt:String id="BLP.OpenTip" DefaultValue="Open the SlideChart editor for the selected chart." />
+        <bt:String id="BLP.InsertTip" DefaultValue="Insert a new chart of the chosen type." />
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
