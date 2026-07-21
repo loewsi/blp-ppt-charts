@@ -8,6 +8,7 @@ const CONNECTOR_COLOR = "#9AA6BF";
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
 const DEFAULT_FALL = "#E8412C";
+const TOTAL_COLOR = "#001C54"; // computed "e" total/subtotal columns
 
 const PAD_TOP = 22;
 const PAD_BOTTOM = 26;
@@ -30,16 +31,18 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
   if (n === 0 || !series0) return prims;
 
   const deltas = data.categories.map((_, i) => safe(series0.values[i]));
+  const isTotal = (i: number) => data.totalFlags?.[i] ?? false;
   const riseColor = series0.color;
   const fallColor = data.series[1]?.color ?? DEFAULT_FALL;
 
-  // Running totals: before[i] is the cumulative before bar i, after[i] after it.
+  // Running totals. A normal column adds its delta; an "e" total column shows the
+  // running sum (a bar from the baseline) and leaves the flow unchanged.
   const before: number[] = [];
   const after: number[] = [];
   let cum = 0;
   for (let i = 0; i < n; i++) {
     before.push(cum);
-    cum += deltas[i];
+    if (!isTotal(i)) cum += deltas[i];
     after.push(cum);
   }
 
@@ -60,16 +63,18 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
 
   for (let i = 0; i < n; i++) {
     const x = plotLeft + i * slot + (slot - barW) / 2;
-    const top = Math.max(before[i], after[i]);
-    const bot = Math.min(before[i], after[i]);
+    const total = isTotal(i);
+    // A total column spans baseline→running sum; a delta column floats before→after.
+    const top = total ? Math.max(0, after[i]) : Math.max(before[i], after[i]);
+    const bot = total ? Math.min(0, after[i]) : Math.min(before[i], after[i]);
     const yTop = yFor(top);
     const h = Math.max(0, yFor(bot) - yTop);
-    const fill = deltas[i] >= 0 ? riseColor : fallColor;
+    const fill = total ? TOTAL_COLOR : deltas[i] >= 0 ? riseColor : fallColor;
     prims.push({ kind: "rect", x, y: yTop, w: barW, h, fill, meta: { objectType: "segment", seriesIndex: 0, categoryIndex: i } });
 
-    // Delta label (with sign), inside if it fits else just above the bar.
+    // Total columns show the running sum; delta columns show the signed change.
     if (opt.showValueLabels) {
-      const text = signed(deltas[i], nf);
+      const text = total ? formatNumber(after[i], { ...nf, hideZero: false }) : signed(deltas[i], nf);
       const cx = x + barW / 2;
       const lw = estTextW(text, opt.segmentFontSize);
       const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: 0, categoryIndex: i };

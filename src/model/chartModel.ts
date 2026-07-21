@@ -29,6 +29,7 @@ export interface ChartData {
   type: ChartType;
   categories: string[];
   series: Series[];
+  totalFlags?: boolean[]; // waterfall: category is a computed total column (grid cell "e")
 }
 
 /** Thousands/decimal separator style. "locale" = the viewer's system default. */

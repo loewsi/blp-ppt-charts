@@ -13,10 +13,20 @@ import { PALETTE } from "../model/chartModel";
 export type Cells = string[][]; // cells[row][col]; row 0 = categories, col 0 = series
 
 // ---- pure helpers --------------------------------------------------------
+/** True when a cell is the waterfall "total" marker ("e" for equals, or "="). */
+export function isTotalMarker(raw: string): boolean {
+  const t = (raw ?? "").trim().toLowerCase();
+  return t === "e" || t === "=";
+}
+
 export function cellsFromData(data: ChartData): Cells {
   const rows: Cells = [["", ...data.categories]];
-  data.series.forEach((s) => {
-    rows.push([s.name, ...data.categories.map((_, i) => String(s.values[i] ?? 0))]);
+  data.series.forEach((s, si) => {
+    rows.push([
+      s.name,
+      // The first row carries the waterfall "e" markers so they round-trip.
+      ...data.categories.map((_, i) => (si === 0 && data.totalFlags?.[i] ? "e" : String(s.values[i] ?? 0))),
+    ]);
   });
   return rows;
 }
@@ -32,7 +42,10 @@ export function dataFromCells(cells: Cells, colors: string[]): ChartData {
       return isFinite(n) ? n : 0;
     }),
   }));
-  return { type: "barColumn", categories, series };
+  // "e" / "=" in the first data row marks a waterfall total column.
+  const firstRow = cells[1] ?? [];
+  const totalFlags = categories.map((_, i) => isTotalMarker(firstRow[i + 1] ?? ""));
+  return { type: "barColumn", categories, series, totalFlags };
 }
 
 /** Write a pasted TSV block into `cells` starting at (r0,c0), growing as needed. */

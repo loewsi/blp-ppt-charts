@@ -289,6 +289,18 @@ function refreshVisibility(): void {
   );
   const cagrOn = (byId("optCagrArrow") as HTMLSelectElement).value !== "off";
   ["optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods"].forEach((id) => showLabel(id, cagrOn));
+
+  // Data-entry hint per chart type.
+  const hints: Partial<Record<typeof type, string>> = {
+    waterfall: "Tip: type “e” in a value cell to make it a computed total / subtotal column.",
+    scatter: "Rows: 1st = X, 2nd = Y, 3rd = bubble size (optional). Each column is a point.",
+    pie: "The first series becomes the slices; each category is one slice.",
+    mekko: "Column width = the category total; each column is 100%-stacked by series.",
+  };
+  const hint = byId("typeHint");
+  const text = hints[type] ?? "";
+  hint.textContent = text;
+  hint.hidden = text === "";
 }
 
 // ---- grid bridge ---------------------------------------------------------
