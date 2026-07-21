@@ -159,6 +159,9 @@ CAGR-above-chart, diff-arrow placement, auto-shades.
 
 ## Still open
 - ⬜ Plot-anchored box model so axis labels don't shrink the plot (#8 — needs resize-poll rework)
-- ⬜ Sync-axis across charts; per-segment color override (rest of G14)
+- ⬜ **Pie jumps to initial position on edit** (Silvan; likely tied to #8 box handling)
+- ⬜ Sync-axis across charts; per-segment color override; per-series master-scheme color picker
 - ⬜ Waterfall connector-controlled totals; line area fill (needs polygon primitive)
 - ⬜ Standard slide elements (pending the "where should they live" decision)
+- ❓ **Decisions needed** (see TESTING.md bottom): Excel-style **formulas** in the grid;
+  **foldable/Excel-like grid** (hide rows/cols); **multi-series waterfall** ("e" shows one series today)
