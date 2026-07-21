@@ -13,6 +13,11 @@ Last updated: **2026-07-21 pm**.
 
 # Part A — Needs your test 🔲
 
+## A0b. Newest build — re-verify
+- [ ] **Scatter** remodelled: each **row is a point**; columns **X, Y, Size (bubble), Group (color)**. Add/remove points (rows), colour by group or per-point swatch; bubble radius ∝ √size. Switching to scatter auto-labels the columns.
+- [ ] **Ctrl+Z / Ctrl+Y** (or Ctrl+Shift+Z) undo/redo datasheet + option changes in the pane (not while editing a cell — there native text-undo applies).
+- [ ] **Pie**: the % label sits in the ring and **moves with the doughnut hole**; **Outside** label mode puts "Category NN%" beyond the rim. (Roundness is capped by Office.js — see note below.)
+
 ## A0. Fixes from your latest round — re-verify
 - [ ] **Per-chart options**: each chart type now shows only relevant settings (line has no arrangement/orientation/connectors/totals; diff/CAGR offer only "series" on a line; legend only where it renders; etc.). Sanity-check each type.
 - [ ] **+ Category** now inserts to the **RIGHT** of the cursor.
