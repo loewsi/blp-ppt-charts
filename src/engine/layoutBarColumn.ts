@@ -64,12 +64,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     else insBottom += axisBand;
     if (useSecondary && isColumn) insRight += axisBand; // right-hand secondary axis labels
   }
-  if (opt.showLegend) {
-    if (legendPos === "top") insTop += legendH;
-    else if (legendPos === "bottom") insBottom += legendH;
-    else if (legendPos === "left") insLeft += legendW;
-    else insRight += legendW;
-  }
+  // The legend is a separate movable group drawn OUTSIDE the plot, so toggling or
+  // repositioning it never shifts/resizes the bars (Silvan: the graph shouldn't jump).
   const cagrBand = opt.cagrArrow !== "off" && isColumn ? 20 : 0; // room for the CAGR arrow above the plot
   insTop += cagrBand;
 
@@ -294,14 +290,16 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const widths = textWs.map((tw) => sw + gapx + tw);
       const total = widths.reduce((a, b) => a + b, 0) + itemGap * Math.max(0, data.series.length - 1);
       let x = box.left + Math.max(0, (box.width - total) / 2);
-      const y = legendPos === "top" ? box.top + 4 : box.top + box.height - legendH + 6;
+      // Just above / below the plot box (outside it).
+      const y = legendPos === "top" ? box.top - legendH + 2 : box.top + box.height + 4;
       data.series.forEach((s, i) => {
         prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
         prims.push({ kind: "text", x: x + sw + gapx, y, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, autofit: true, meta: { objectType: "legend", seriesIndex: i } });
         x += widths[i] + itemGap;
       });
     } else {
-      const x = legendPos === "left" ? box.left + 4 : box.left + box.width - legendW + 4;
+      // Just left / right of the plot box (outside it).
+      const x = legendPos === "left" ? box.left - legendW : box.left + box.width + 4;
       let y = plotTop;
       data.series.forEach((s, i) => {
         prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
