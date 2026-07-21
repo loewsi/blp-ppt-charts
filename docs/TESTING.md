@@ -28,7 +28,8 @@ Last updated: **2026-07-21 pm**.
 - [ ] **Pie**: changing the color **recolors** it (slices are shades of the series color); **white hairlines** gone.
 
 ## A2. Brand-new — first render
-- [ ] **Waterfall "e"** total column (baseline → running sum). *Note: v1 is single-series; multi-series is a separate decision (below).*
+- [ ] **Waterfall "e"** total column (baseline → running sum).
+- [ ] **Multi-series waterfall**: add a 2nd series → each step stacks its series as sub-segments (colored per series); running total = the per-step sum.
 - [ ] **Agenda** (bottom of pane): list chapters → *Create / update agenda slide*; re-run updates it.
 - [ ] **Doughnut hole %** > 0 → ring with the total in the middle.
 
@@ -99,12 +100,8 @@ Legend: **✅** you confirmed it works · **✎** your feedback → what I did (
 
 ---
 
-# Decisions needed (big items — not built yet)
-These are sizable and worth your steer before I build:
-1. **Excel-style formulas in the grid** (`=A1+B1`, `=SUM(...)`). Useful but means a formula parser + a
-   cell-reference model. Worth it, or keep values-only and rely on paste-from-Excel?
-2. **Foldable / true-Excel grid** (hide/collapse rows/columns for calculations). This likely means
-   replacing the lightweight grid with a heavier component. Do you want that, or is the current grid enough?
-3. **Multi-series waterfall** ("e still shows one line, not all"). Today waterfall reads one series of
-   deltas. Multi-series (stacked steps per category) is a real rebuild — do you want it, and how should
-   several series combine per step?
+# Decisions in progress
+- **Data grid → "feels like Excel out of the box"** (Silvan, 2026-07-21): not just formulas — a broader
+  question about which Excel behaviours the grid should have. **Not building piecemeal.** Next step is an
+  options review together (embed real Excel via Office.js? a grid library? extend the current grid?).
+- **Multi-series waterfall** — ✅ built (test above).

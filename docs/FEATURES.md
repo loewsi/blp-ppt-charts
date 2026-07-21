@@ -96,9 +96,10 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Waterfall — 🔵 reworked
 - 🔵 Running totals, rise/fall bars, connectors, zero baseline, signed labels
-- 🔵 think-cell **"e" cell** → a computed total/subtotal column (baseline→running sum, distinct color) *(new)*
+- 🔵 think-cell **"e" cell** → a computed total/subtotal column (baseline→running sum, distinct color)
+- 🔵 **Multi-series steps** — each step sums its series, stacked as per-series sub-segments *(new)*
 - ⬜ Connector-controlled totals (delete a connector to start a new sum) — interactive, next step
-- ⬜ Bar (horizontal) orientation; per-bar color override
+- ⬜ Bar (horizontal) orientation; per-bar color override; series legend
 
 ### Line — 🔵
 - 🔵 Multi-series lines with markers + value labels *(new)*
@@ -163,5 +164,6 @@ CAGR-above-chart, diff-arrow placement, auto-shades.
 - ⬜ Sync-axis across charts; per-segment color override; per-series master-scheme color picker
 - ⬜ Waterfall connector-controlled totals; line area fill (needs polygon primitive)
 - ⬜ Standard slide elements (pending the "where should they live" decision)
-- ❓ **Decisions needed** (see TESTING.md bottom): Excel-style **formulas** in the grid;
-  **foldable/Excel-like grid** (hide rows/cols); **multi-series waterfall** ("e" shows one series today)
+- ❓ **Data-grid direction** (see TESTING.md bottom): Silvan wants the grid to feel more like Excel
+  out of the box (formulas, hide/fold rows-cols, …). Not building piecemeal yet — reviewing options together.
+  (Multi-series waterfall: ✅ built.)
