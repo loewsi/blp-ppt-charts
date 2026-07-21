@@ -81,65 +81,61 @@ These are freshly built and **never seen rendered**. Expect rough edges; note an
 
 ---
 
+> `[x]` = confirmed by Silvan in PowerPoint. `[ ]` = still to verify (new or changed since last check).
+
 ## 1. Core lifecycle
-- [ ] **Insert** a chart → default stacked column appears.
-- [ ] Click a **blank area** → pane says "No chart selected".
-- [ ] Click the **chart** → its data + options load back into the pane.
-- [ ] Edit a **cell** → chart updates automatically (no Update button), ~0.4s later.
-- [ ] **Move** the chart → it does *not* reload/flicker.
-- [ ] **Resize** the chart → it re-lays-out once you release (labels/axis reflow).
-- [ ] Shrink it **very small** → chart stays visible (doesn't disappear).
-- [ ] **Copy-paste** the chart → the copy is independently editable.
-- [ ] Save, close, reopen the .pptx → chart still editable (data survived in the file).
+- [x] **Insert** a chart → default stacked column appears.
+- [x] Click a **blank area** → pane says "No chart selected".
+- [x] Click the **chart** → its data + options load back into the pane.
+- [x] Edit a **cell** → chart updates automatically (no Update button), ~0.4s later.
+- [x] **Move** the chart → it does *not* reload/flicker.
+- [x] **Resize** the chart → it re-lays-out once you release (labels/axis reflow).
+- [x] Shrink it **very small** → chart stays visible (doesn't disappear).
+- [x] **Copy-paste** the chart → the copy is independently editable.
+- [x] Save, close, reopen the .pptx → chart still editable (data survived in the file).
 
 ## 2. Data grid
-- [ ] Type in categories (top row) and series names (left column).
-- [ ] Arrow-key navigation; Enter/Tab commit.
-- [ ] **Paste** a block from Excel → grid fills.
-- [ ] `+ Series` / `− Series` / `+ Category` / `− Category` / **Transpose**.
-- [ ] Range-select with mouse and **Shift+arrows**; **Ctrl+Space** / **Shift+Space**.
+- [x] Type in categories (top row) and series names (left column).
+- [x] Arrow-key navigation; Enter/Tab commit.
+- [x] **Paste** a block from Excel → grid fills.
+- [x] `− Series` / `− Category` / **Transpose** · [ ] `+ Series`/`+ Category` now insert at the cursor.
+- [x] Range-select with mouse and **Shift+arrows**; **Shift+Space**.
+- [ ] **Ctrl+Space** — likely captured by a Windows OS shortcut (report if it still opens a menu).
 
 ## 3. Chart styles (Chart style panel)
-- [ ] Orientation **Column ↔ Bar**.
-- [ ] Arrangement **Stacked / Clustered / 100% stacked**.
-- [ ] **Gap %** widens/narrows bars.
-- [ ] **Totals**, **Value labels**, **Reverse order** toggles.
-- [ ] **Legend** on + each position **top/bottom/left/right**; legend text word-wraps to its box;
-      drag the legend, then edit data → legend stays where you put it.
-- [ ] **Gridlines** and **Value axis** toggles.
-- [ ] **Connectors** (stacked column only) draw between adjacent stacks.
-- [ ] **Reference line**: type a value → red labelled line at that value (horizontal for column,
-      vertical for bar); clear it → line disappears; a value above the axis max shows nothing.
-- [ ] **Axis min / max**: fix either end → bars rescale to the fixed range; blank = auto.
+- [x] Orientation **Column ↔ Bar**.
+- [x] Arrangement **Stacked / Clustered / 100% stacked** (100% shows the absolute total).
+- [x] **Gap %** widens/narrows bars.
+- [x] **Totals**, **Value labels**, **Reverse categories**, **Reverse series** toggles.
+- [x] **Legend** positions work · [ ] re-verify: moving the legend no longer makes the graph jump.
+- [x] **Gridlines** and **Value axis** toggles · ⚠️ axis labels still shrink the plot (#8, open).
+- [x] **Connectors** (stacked column only) draw between adjacent stacks.
+- [x] **Reference line** at a value · [x] **Reference color** · [x] **Axis min / max**.
 
 ## 4. Negative values
-- [ ] Enter negative numbers → bars extend **below** the zero baseline; axis spans below zero.
+- [x] Enter negative numbers → bars extend **below** the zero baseline; axis spans below zero.
 
 ## 5. Labels
-- [ ] Small segments keep their label **inside** as a color chip, nudged to avoid overlap.
-- [ ] Switch small labels to **Move outside** → labels sit outside, no chip.
-- [ ] Label boxes are only **as wide as the text**, in **front** of bars, vertically centered.
+- [x] Small segments keep their label **inside** as a color chip (Silvan: works, but not everywhere).
+- [ ] Switch to **Outside** → ALL value labels sit outside, no chip.
+- [ ] Wide labels get a chip (no white-on-white); overlapping small labels spread both ways.
 
 ## 6. Number format
-- [ ] Decimals, **Scale** k/M, **Prefix**, **Suffix**, **Hide zeros**.
-- [ ] **Thousands ,** (note: your de-CH locale may show `1'234`), **Negatives ( )**, **Plus sign**.
+- [x] Decimals, **Prefix**, **Suffix**, **Hide zeros**, **Group thousands**, **Negatives ( )**, **Plus sign**.
+- [ ] **Magnitude** now reads ×10⁻³/×10³ etc.; a `0` sits in stack order; **Separators** dropdown.
 
 ## 7. Fonts & colors
-- [ ] Font family applies to all labels; segment vs total sizes independent.
-- [ ] Color scheme **Master accents** (reads the deck theme) / **BLP** / **Grayscale** → Apply.
-- [ ] Per-series color swatch → recolors that whole series.
+- [x] Font family applies to all labels; segment vs total sizes independent.
+- [x] Color scheme **Blue** + per-series swatch · [ ] Green/Red/Orange/Multi, Master accents, Auto-shades.
 
-## 8. Waterfall
-- [ ] Chart type **Waterfall** → first series = deltas; rise/fall bars; running total; connectors;
-      signed (+/−) labels; zero baseline.
+## 8. Waterfall — reworked, re-verify
+- [ ] Deltas render rise/fall with running total + connectors + baseline.
+- [ ] Type **"e"** in a value cell → a computed total column from the baseline to the running sum.
 
 ---
 
-## Known-open (not built / broken — don't test yet)
-- **Copy-paste on the SAME slide** duplicates the internal id → selecting/editing gets confused
-  (works across different slides). Duplicate-id repair is the next fix.
-- **Waterfall** needs a rework (categories/series naming + a think-cell "e" total cell +
-  connector-controlled totals) — current version is placeholder-level.
-- Difference arrows, CAGR arrows (both need real arrowheads), combination line series,
-  per-segment color override, error bars, sync-axis-across-charts, color picker + auto-shades,
-  global inside/outside label placement. See [FEATURES.md](FEATURES.md).
+## Known-open (don't test yet)
+- **Axis labels shrink the plot** (#8) — plot-anchored box model pending.
+- **Sync-axis across charts**, **per-segment color override**, **waterfall connector-controlled totals**,
+  **line area fill**, **standard slide elements** (pending the "where should they live" decision).
+See [FEATURES.md](FEATURES.md) for the full status.

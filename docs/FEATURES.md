@@ -8,7 +8,13 @@ and **Per chart type**.
 - ✅ **Tested** — confirmed working in PowerPoint by Silvan
 - 🔵 **Implemented** — built + unit-tested in code; NOT yet confirmed in PowerPoint (Claude is blind to the rendered chart)
 - ⬜ **Open** — not built yet
-- ⚠️ **Deferred** — blocked by the Office.js platform / deployment path
+- ⚠️ **Deferred / partial** — blocked by the platform, or built with a caveat to verify
+
+**Doc process (living, not a graveyard):** this file + [TESTING.md](TESTING.md) are the two
+maintained docs and are updated in the same commit as the code they describe (or at the end of a
+work round). FEATURES = status of every capability; TESTING = the PowerPoint check-off list. The
+old GAP-ANALYSIS doc was removed (2026-07-21) as duplicative — its architecture-gap items live in
+"Robustness / architecture backlog" below. Last reconciled: **2026-07-21 pm**.
 
 Architecture is shared: model → layout → render-plan → PowerPoint adapter. Anything under
 **General** applies to all chart types once that type has a layout function.
@@ -18,64 +24,63 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 ## General (applies across chart types)
 
 ### Data & editing
-- ✅ Excel-like grid (edit categories/series/values, keyboard nav, range select, Ctrl+Space, Ctrl +/−, copy/paste)
-- 🔵 Add / remove / transpose series & categories — **remove now targets the cursor's row/col**
-- 🔵 Live apply — **typing a value now commits on Enter/Tab/blur** (was: needed a transpose)
-- 🔵 Insert a fresh chart; select loads it; **click-away deselects**
-- 🔵 Positive / zero / negative values (zero label shown at baseline when zeros aren't hidden)
-- 🔵 **Duplicate-chartId repair** — same-slide copy-paste splits the copy onto a fresh id (pairs its legend) *(new)*
+- ✅ Excel-like grid (edit categories/series/values, keyboard nav, range select, Shift+Space, Ctrl +/−, copy/paste)
+- ⚠️ Ctrl+Space (column select) is captured by a Windows OS shortcut — can't be intercepted from the pane
+- ✅ Add / remove / transpose series & categories (remove targets the cursor; **insert-at-cursor: verify**)
+- ✅ Live apply — typing a value commits on Enter/Tab/blur
+- ✅ Insert a fresh chart; select loads it; click-away deselects
+- ✅ Positive / negative values · 🔵 zero label shown in stack order when zeros aren't hidden
+- ✅ Duplicate-chartId repair — same-slide copy-paste splits the copy onto a fresh id · 🔵 next-free name + orphan-legend cleanup
 - ⬜ Dates as categories; custom "value = 100%" base
 
 ### Colors
-- 🔵 Presets: Master accents (live) · Blue · Green · Red · Orange · Multi-color · Grayscale; per-series swatch *(new)*
-- 🔵 Auto-shades: pick a base color → light→dark ramp across the series *(new)*
+- ✅ Presets + per-series swatch (Blue confirmed) · 🔵 Green / Red / Orange / Multi-color / Master accents
+- 🔵 Auto-shades: pick a base color → light→dark ramp across the series
 - ⬜ Per-series picker showing the master scheme; per-segment color override + highlight; series outline; pattern fill
 
 ### Segment / value labels
 - ✅ Inside chip with collision offset (Silvan: "labels inside are fine, I like them")
-- 🔵 Show/hide, value or %, box sized to text, in front of bars, vertical-centered
+- ✅ Show/hide, value or %, box sized to text, in front of bars, vertical-centered
 - 🔵 Wide labels get a colored chip (fixes white-on-white); overlap-spread now moves the anchor label too
-- 🔵 Global inside/outside placement — "Outside" now moves ALL value labels out, not just small ones *(new)*
+- 🔵 Global inside/outside placement — "Outside" moves ALL value labels out, not just small ones
 - ⬜ Custom prefix/suffix text per label; datasheet text; footnotes; manual drag + leader line
 
 ### Total labels
-- 🔵 Totals above stacks, independent font size, sized to text
+- ✅ Totals above stacks, independent font size, sized to text
 - ⬜ Totals for selected categories only; custom total text; drag a total
 
 ### Legend
-- 🔵 Add/remove, position top/bottom/left/right, autofit box, own movable group
-- 🔵 Drawn OUTSIDE the plot, so toggling/repositioning never shifts the bars *(fixed #7)*
+- ✅ Add/remove, position top/bottom/left/right, autofit box, own movable group
+- 🔵 Drawn OUTSIDE the plot, so toggling/repositioning never shifts the bars *(fixed #7 — verify)*
 - ⬜ Reorder entries independently; format one entry; border
 
 ### Axis, gridlines, baseline
-- 🔵 Baseline; optional axis labels (auto scale, ticks); optional gridlines; axis line toggle
-- 🔵 Manual axis min/max
+- ✅ Baseline; optional axis labels (auto scale, ticks); optional gridlines; axis line toggle
+- ✅ Manual axis min/max
 - ⚠️ Turning on axis labels still shrinks the plot (plot-anchored box model pending, #8)
-- ⬜ Sync axis (same scale) across multiple charts
-- ⬜ Manual tick step; axis break; axis title
+- ⬜ Sync axis (same scale) across multiple charts; manual tick step; axis break; axis title
 
 ### Number formatting (shared engine)
-- 🔵 Decimals, magnitude as a power of ten (×10⁻³/⁻⁶/⁻⁹, ×10³/⁶ — no auto letter), prefix, suffix *(new)*
-- 🔵 Hide-zero (toggle respected; zero shown in stack order), percent, plus sign, negatives in parentheses
-- 🔵 Separator style: `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / system; group-thousands on by default
+- ✅ Decimals, prefix, suffix, group-thousands, negatives in parens, plus sign, hide-zero
+- 🔵 Magnitude as a power of ten (×10⁻³/⁻⁶/⁻⁹, ×10³/⁶ — no auto letter); zero shown in stack order
+- 🔵 Separator style: `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / system
 - ⬜ Currency presets; per-label-type formats
 
 ### Fonts / text
-- 🔵 Font family; independent segment & total sizes; middle+centered
+- ✅ Font family; independent segment & total sizes; middle+centered
 - ⬜ Bold/italic/color per label type
 
 ### Interaction / lifecycle
-- 🔵 Click a chart → loads into pane; move (no reload); resize → re-lays-out on release; tiny sizes stay visible; legend stays put
-- 🔵 Data stored in the .pptx (reopen/travel)
-- ⬜ Copy-to-slide/deck duplicate-chartId repair; undo-step quality
+- ✅ Click a chart → loads; move (no reload); resize → re-lays-out on release; tiny sizes stay visible
+- ✅ Data stored in the .pptx (reopen/travel); same-slide copy-paste → independent copy
+- ⬜ Undo-step quality (delete-and-recreate today)
 - ⚠️ Ribbon insert + auto open/close pane (needs shared runtime; blocked on trusted-catalog sideload → revisit via central deploy / AppSource)
 
 ### Annotations (data-driven)
-- 🔵 Series connectors (stacked columns)  *(new)*
-- 🔵 Difference arrows (totals or a series; signed delta + optional %; placement via diffPos) *(new)*
-- 🔵 CAGR arrows — horizontal arrow above the plot with a white % bubble *(new)*
-- 🔵 Value / reference line (fixed value, labelled, color configurable)
-- 🔵 Arrows use real triangular heads; guide lines are real dashed connectors
+- ✅ Series connectors (stacked columns); difference arrows (totals or a series, signed delta + %)
+- 🔵 Difference-arrow placement (diffPos); CAGR arrow — horizontal above the plot with a white % bubble
+- ✅ Value / reference line (fixed value, labelled) · 🔵 configurable color
+- 🔵 Arrows use triangular heads (Silvan: heads visible but seams show); guide lines are real dashed connectors
 - ⬜ Error bars / ranges
 
 ---
@@ -83,12 +88,10 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 ## Per chart type
 
 ### Column / bar family
-- 🔵 Simple column, stacked, clustered, 100% stacked, horizontal bar
-- 🔵 Negative values below baseline
-- 🔵 Reverse series (stacking/cluster order), separate from reverse categories *(new)*
-- 🔵 100% stacked shows the absolute total on top *(fixed)*
-- 🔵 Combination — mark any series as a line (per-series toggle by the color swatch) *(new)*
-- 🔵 Line series secondary (right-hand) axis *(new)*
+- ✅ Simple column, stacked, clustered, 100% stacked, horizontal bar
+- ✅ Negative values below baseline; reverse series; 100% stacked shows the absolute total on top
+- ✅ Combination — mark any series as a line (per-series toggle); secondary axis works
+- 🔵 Secondary-axis manual min/max + axis line both sides
 - ⬜ Category gaps / visual grouping; line area fill (needs a polygon primitive)
 
 ### Waterfall — 🔵 reworked
@@ -101,8 +104,8 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - 🔵 Multi-series lines with markers + value labels *(new)*
 - ⬜ Connect-gaps; area fill (needs a polygon primitive)
 
-### Combination — 🔵
-- 🔵 Bars + any series as a line (per-series toggle); optional secondary axis with manual min/max *(new)*
+### Combination — ✅
+- ✅ Bars + any series as a line (per-series toggle); optional secondary axis (manual min/max: verify)
 
 ### Pie / doughnut — 🔵
 - 🔵 First series → slices; % inside, category outside; doughnut hole + centre total *(new)*
@@ -131,6 +134,15 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - ⬜ These overlap with the **QuickTools** VBA ribbon add-in — decide one home (discussion below)
 
 ---
+
+## Robustness / architecture backlog (from the former gap analysis)
+- ⬜ In-place update instead of delete-and-recreate (better undo; fewer flicker/id churn)
+- ⬜ Transactional render / corruption guard (roll back if a draw half-fails)
+- ⬜ Persist per-object semantic tags → sub-object selection (click one segment)
+- ⬜ Model chunking / CustomXmlPart if a chart's JSON outgrows the shape-tag length limit
+- ⬜/🔬 Offline cold-start editing (pane loads over HTTPS; native shapes already render offline)
+- 🔬 Mac runtime verification (all APIs feature-detected; not yet run on Mac)
+- ✅ Local-only / no backend / no telemetry; model lives in the .pptx
 
 ## Deferred / not feasible in Office.js
 - ⚠️ Shared-runtime ribbon + auto-pane (deployment-path dependent)

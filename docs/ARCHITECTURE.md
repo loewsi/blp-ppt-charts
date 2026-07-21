@@ -2,8 +2,9 @@
 
 This answers the review requested in the architecture brief: current architecture, storage
 strategy, cross-platform capability risks, and the offline / undo / selection / reliability
-positions. See `ADR-0001-core-architecture.md` for decisions and `GAP-ANALYSIS-AND-PLAN.md`
-for the requirement-by-requirement gap analysis and phased plan.
+positions. See `ADR-0001-core-architecture.md` for decisions and `FEATURES.md`
+for capability status + the robustness/architecture backlog (the standalone gap-analysis doc
+was folded into FEATURES.md on 2026-07-21 to avoid duplicate docs).
 
 ## 1. Current architecture (as-built)
 
