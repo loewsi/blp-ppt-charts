@@ -40,6 +40,19 @@ describe("layoutWaterfall", () => {
 
   it("labels each category", () =>
     expect(p.filter((s) => s.meta?.objectType === "categoryLabel").length).toBe(3));
+
+  it("shows a leading + only when the plusSign flag is set", () => {
+    const labelText = (m: ChartModel) =>
+      layoutWaterfall(m)
+        .filter((s) => s.kind === "text" && s.meta?.objectType === "segmentLabel")
+        .map((s) => (s.kind === "text" ? s.text : ""));
+    const off = model(); // deltas 10, 5, -3
+    expect(labelText(off)).toContain("10"); // no "+"
+    expect(labelText(off)).not.toContain("+10");
+    const on = model();
+    on.options.numberFormat.plusSign = true;
+    expect(labelText(on)).toContain("+10");
+  });
 });
 
 describe("layoutWaterfall — multi-series steps", () => {

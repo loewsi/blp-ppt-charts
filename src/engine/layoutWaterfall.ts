@@ -106,7 +106,8 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
         const val = safe(data.series[s].values[i]);
         if (val === 0) continue;
         const fill = single ? (val >= 0 ? riseColor : fallColor) : data.series[s].color;
-        drawSeg(x, ps[s], ps[s + 1], fill, signed(val, nf), s, i);
+        // Respect the number-format flags: a leading "+" only appears when plusSign is on.
+        drawSeg(x, ps[s], ps[s + 1], fill, formatNumber(val, nf), s, i);
       }
     }
 
@@ -131,12 +132,6 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
 
 function safe(v: number | undefined): number {
   return typeof v === "number" && isFinite(v) ? v : 0;
-}
-
-function signed(v: number, nf: Parameters<typeof formatNumber>[1]): string {
-  const s = formatNumber(Math.abs(v), { ...nf, plusSign: false, negParens: false });
-  if (!s) return "";
-  return (v < 0 ? "−" : "+") + s;
 }
 
 function estTextW(text: string, size: number): number {

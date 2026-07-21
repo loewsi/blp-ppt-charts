@@ -164,7 +164,10 @@ export function getGridData(): ChartData {
       ...(seriesKinds[ri] ? { kind: seriesKinds[ri] } : {}),
     });
   }
-  return { type: "barColumn", categories, series };
+  // Waterfall: an "e" / "=" in the first data row marks that category a total column.
+  const firstDataRow = cells[1] ?? [];
+  const totalFlags = catCols.map((c) => isTotalMarker(firstDataRow[c] ?? ""));
+  return { type: "barColumn", categories, series, totalFlags };
 }
 
 /** Hide the selected rows / columns (helper scaffolding) from view + chart. */
