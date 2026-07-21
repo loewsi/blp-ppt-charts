@@ -63,19 +63,31 @@ export function layoutPie(model: ChartModel): Primitive[] {
     }
     a = a1;
 
-    // Percentage inside; category name outside.
     const mid = (a0 + a1) / 2;
-    if (opt.showValueLabels) {
-      const inside = pt(mid, R * 0.62);
-      const pct = formatPercent(v, total, nf.decimals, nf.sep);
-      const w = estTextW(pct, opt.segmentFontSize);
-      prims.push({ kind: "text", x: inside.x - w / 2, y: inside.y - 7, w, h: 14, text: pct, color: "#FFFFFF", size: opt.segmentFontSize, bold: true, align: "center", family: fam, meta: { objectType: "sliceLabel", categoryIndex: ci } });
+    const pct = formatPercent(v, total, nf.decimals, nf.sep);
+    const holeFrac = opt.pieHole > 0 ? Math.min(0.9, opt.pieHole) : 0;
+    if (opt.labelOverflow === "outside") {
+      // Everything outside: "Category NN%" on one line beyond the rim.
+      if (opt.showValueLabels || cat) {
+        const out = pt(mid, R + 6);
+        const text = [cat, opt.showValueLabels ? pct : ""].filter(Boolean).join("  ");
+        const lw = estTextW(text, 9);
+        const right = Math.cos(mid) >= 0;
+        prims.push({ kind: "text", x: right ? out.x : out.x - lw, y: out.y - 7, w: lw, h: 14, text, color: LABEL_DARK, size: 9, bold: false, align: right ? "left" : "right", family: fam, meta: { objectType: "sliceLabel", categoryIndex: ci } });
+      }
+    } else {
+      // Percentage inside the ring (follows the doughnut hole); category outside.
+      if (opt.showValueLabels) {
+        const rLabel = holeFrac > 0 ? ((holeFrac + 1) / 2) * R : R * 0.62;
+        const inside = pt(mid, rLabel);
+        const w = estTextW(pct, opt.segmentFontSize);
+        prims.push({ kind: "text", x: inside.x - w / 2, y: inside.y - 7, w, h: 14, text: pct, color: "#FFFFFF", size: opt.segmentFontSize, bold: true, align: "center", family: fam, meta: { objectType: "sliceLabel", categoryIndex: ci } });
+      }
+      const outside = pt(mid, R + 4);
+      const lw = estTextW(cat, 9);
+      const rightHalf = Math.cos(mid) >= 0;
+      prims.push({ kind: "text", x: rightHalf ? outside.x : outside.x - lw, y: outside.y - 7, w: lw, h: 14, text: cat, color: LABEL_DARK, size: 9, bold: false, align: rightHalf ? "left" : "right", family: fam, meta: { objectType: "categoryLabel", categoryIndex: ci } });
     }
-    const outside = pt(mid, R + 4);
-    const label = `${cat}`;
-    const lw = estTextW(label, 9);
-    const rightHalf = Math.cos(mid) >= 0;
-    prims.push({ kind: "text", x: rightHalf ? outside.x : outside.x - lw, y: outside.y - 7, w: lw, h: 14, text: label, color: LABEL_DARK, size: 9, bold: false, align: rightHalf ? "left" : "right", family: fam, meta: { objectType: "categoryLabel", categoryIndex: ci } });
   });
 
   // Doughnut hole (drawn over the fan; text still renders last so labels survive).
