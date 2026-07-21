@@ -2,7 +2,6 @@ import type {
   ChartData,
   ChartModel,
   ChartBox,
-  Series,
   ChartOptions,
   ChartType,
   Orientation,
@@ -10,7 +9,6 @@ import type {
 } from "../model/chartModel";
 import {
   DEFAULT_BOX,
-  PALETTE,
   PALETTES,
   CHART_TYPES,
   CURRENT_SCHEMA_VERSION,
@@ -32,7 +30,24 @@ import {
 import { newId } from "../util/id";
 import { createOrUpdateAgenda } from "../office/agenda";
 import { shadesFrom } from "../util/color";
-import { mountGrid, setGridData, getGridData, setSeriesColor, setSeriesKind, getActive, getSelectionRange } from "./grid";
+import {
+  mountGrid,
+  setGridData,
+  setSheet,
+  getSheet,
+  getGridData,
+  setSeriesColor,
+  setSeriesKind,
+  hideSelectedRows,
+  hideSelectedCols,
+  unhideAll,
+  applyPalette,
+  gridAddSeries,
+  gridRemoveSeries,
+  gridAddCategory,
+  gridRemoveCategory,
+  gridTranspose,
+} from "./grid";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
@@ -235,6 +250,9 @@ function wire(): void {
   byId("addCatBtn").addEventListener("click", () => addCategory());
   byId("removeCatBtn").addEventListener("click", () => removeCategory());
   byId("transposeBtn").addEventListener("click", () => transpose());
+  byId("hideRowBtn").addEventListener("click", () => hideSelectedRows());
+  byId("hideColBtn").addEventListener("click", () => hideSelectedCols());
+  byId("unhideBtn").addEventListener("click", () => unhideAll());
   byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
   byId("agendaBtn").addEventListener("click", () => guard(doAgenda));
   byId("shadeBtn").addEventListener("click", () => applyShades());
@@ -385,78 +403,28 @@ function readGrid(): ChartData {
 }
 
 // ---- structural edits ----------------------------------------------------
+// These delegate to the grid so they mutate the RAW cells (formulas survive);
+// the grid's onChange re-derives currentData and re-applies the chart.
 function addSeries(): void {
-  currentData = readGrid();
-  const i = currentData.series.length;
-  // Cell row = series index + 1; row 0 is the category header. Insert BELOW the
-  // active series (splice index = active.r), or at the top when in the header row.
-  const at = Math.min(currentData.series.length, getActive().r);
-  currentData.series.splice(at, 0, {
-    name: `Series ${i + 1}`,
-    color: PALETTE[i % PALETTE.length],
-    values: currentData.categories.map(() => 0),
-  });
-  renderGrid();
-  scheduleApply();
+  gridAddSeries();
 }
-
 function removeSeries(): void {
-  currentData = readGrid();
-  const { r0, r1 } = getSelectionRange();
-  // Selection rows → series indices (row 0 is the header). Delete all selected, keep ≥1.
-  const from = Math.max(0, r0 - 1);
-  const to = Math.max(0, r1 - 1);
-  const count = Math.min(to - from + 1, currentData.series.length - 1);
-  if (count <= 0) return;
-  currentData.series.splice(from, count);
-  renderGrid();
-  scheduleApply();
+  gridRemoveSeries();
 }
-
 function addCategory(): void {
-  currentData = readGrid();
-  // Insert to the LEFT of the active category (col 0 is the series-name column).
-  const at = Math.max(0, getActive().c - 1);
-  currentData.categories.splice(at, 0, `Cat ${currentData.categories.length + 1}`);
-  currentData.series.forEach((s) => s.values.splice(at, 0, 0));
-  renderGrid();
-  scheduleApply();
+  gridAddCategory();
 }
-
 function removeCategory(): void {
-  currentData = readGrid();
-  const { c0, c1 } = getSelectionRange();
-  const from = Math.max(0, c0 - 1);
-  const to = Math.max(0, c1 - 1);
-  const count = Math.min(to - from + 1, currentData.categories.length - 1);
-  if (count <= 0) return;
-  currentData.categories.splice(from, count);
-  currentData.series.forEach((s) => s.values.splice(from, count));
-  renderGrid();
-  scheduleApply();
+  gridRemoveCategory();
 }
-
 function transpose(): void {
-  const d = readGrid();
-  const newCategories = d.series.map((s) => s.name);
-  const newSeries: Series[] = d.categories.map((cat, ci) => ({
-    name: cat,
-    color: PALETTE[ci % PALETTE.length],
-    values: d.series.map((s) => s.values[ci] ?? 0),
-  }));
-  currentData = { type: "barColumn", categories: newCategories, series: newSeries };
-  renderGrid();
-  scheduleApply();
+  gridTranspose();
 }
 
 /** Recolor every series as auto-generated shades of the picked base color. */
 function applyShades(): void {
   const base = (byId("shadeBase") as HTMLInputElement).value;
-  currentData = readGrid();
-  const shades = shadesFrom(base, currentData.series.length);
-  currentData.series.forEach((s, i) => (s.color = shades[i]));
-  renderGrid();
-  scheduleApply();
+  applyPalette(shadesFrom(base, Math.max(1, readGrid().series.length)));
   status("Applied shades of the base color.");
 }
 
@@ -483,12 +451,7 @@ async function applyColors(): Promise<void> {
   } else {
     palette = PALETTES[scheme] ?? PALETTES.blue;
   }
-  currentData = readGrid();
-  currentData.series.forEach((s, i) => {
-    s.color = palette[i % palette.length];
-  });
-  renderGrid();
-  scheduleApply();
+  applyPalette(palette); // recolors without rebuilding cells (formulas survive)
   status(`Applied ${scheme} colors.`);
 }
 
@@ -519,6 +482,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
         schemaVersion: CURRENT_SCHEMA_VERSION,
         name,
         data,
+        sheet: getSheet(),
         box,
         options: readOptions(),
       };
@@ -558,6 +522,7 @@ async function updateChart(): Promise<void> {
         schemaVersion: CURRENT_SCHEMA_VERSION,
         name: currentName || "Chart",
         data,
+        sheet: getSheet(),
         box,
         options: opts,
       };
@@ -586,7 +551,10 @@ function applyModel(model: ChartModel): void {
   lastLegendPosition = model.options.legendPosition;
   setOptionsUI(model.options);
   (byId("chartType") as HTMLSelectElement).value = model.data.type;
-  renderGrid();
+  // Restore the raw editable sheet (formulas + hidden flags) if present; else the data.
+  if (model.sheet) setSheet(model.sheet);
+  else setGridData(model.data);
+  renderSeriesColors();
   setMode();
   refreshVisibility();
 }

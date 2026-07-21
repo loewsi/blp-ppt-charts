@@ -102,11 +102,22 @@ export interface ChartBox {
   height: number;
 }
 
+/** The raw editable datasheet (source of truth). `data` is derived from this for
+ *  rendering; the sheet keeps formulas + hidden flags that `data` can't represent. */
+export interface ChartSheet {
+  cells: string[][]; // raw entries incl. formulas; A1 addressing over the whole grid
+  colors: string[]; // per series-row (cell row − 1), including hidden rows
+  kinds: (("bar" | "line") | undefined)[];
+  hiddenRows: number[]; // cell-row indices (≥1) hidden from view + chart
+  hiddenCols: number[]; // cell-col indices (≥1) hidden from view + chart
+}
+
 export interface ChartModel {
   id: string;
   schemaVersion: number;
   name: string;
-  data: ChartData;
+  data: ChartData; // derived (visible, computed) — what the layout renders
+  sheet?: ChartSheet; // raw editable surface — restored into the grid on load
   box: ChartBox;
   options: ChartOptions;
 }

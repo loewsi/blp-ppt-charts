@@ -7,7 +7,7 @@
 //
 // Pure helpers (cellsFromData/dataFromCells/pasteInto/insert*/remove*) are unit
 // tested; the DOM/keyboard layer wraps them.
-import type { ChartData, Series } from "../model/chartModel";
+import type { ChartData, ChartSheet, Series } from "../model/chartModel";
 import { PALETTE } from "../model/chartModel";
 import { evaluateGrid } from "./formula";
 
@@ -95,6 +95,8 @@ let onChange: (() => void) | undefined;
 let cells: Cells = [[""]];
 let seriesColors: string[] = [];
 let seriesKinds: (("bar" | "line") | undefined)[] = [];
+let hiddenRows = new Set<number>(); // cell-row indices (≥1) hidden from view + chart
+let hiddenCols = new Set<number>(); // cell-col indices (≥1)
 let active = { r: 1, c: 1 };
 let anchor = { r: 1, c: 1 };
 let editing = false;
@@ -111,21 +113,158 @@ export function setGridData(data: ChartData): void {
   cells = cellsFromData(data);
   seriesColors = data.series.map((s) => s.color);
   seriesKinds = data.series.map((s) => s.kind);
+  hiddenRows = new Set();
+  hiddenCols = new Set();
   clampActive();
   render();
 }
 
+/** Restore the full editable surface (raw cells + colors/kinds + hidden flags). */
+export function setSheet(sheet: ChartSheet): void {
+  cells = sheet.cells.map((r) => [...r]);
+  seriesColors = [...sheet.colors];
+  seriesKinds = [...sheet.kinds];
+  hiddenRows = new Set(sheet.hiddenRows ?? []);
+  hiddenCols = new Set(sheet.hiddenCols ?? []);
+  clampActive();
+  render();
+}
+
+/** The editable surface to persist in the model. */
+export function getSheet(): ChartSheet {
+  const nSer = Math.max(0, cells.length - 1);
+  return {
+    cells: cells.map((r) => [...r]),
+    colors: Array.from({ length: nSer }, (_, i) => seriesColors[i] || PALETTE[i % PALETTE.length]),
+    kinds: Array.from({ length: nSer }, (_, i) => seriesKinds[i]),
+    hiddenRows: [...hiddenRows],
+    hiddenCols: [...hiddenCols],
+  };
+}
+
 export function getGridData(): ChartData {
-  // Chart data uses COMPUTED values, so formula cells feed the chart.
+  // Chart data uses COMPUTED values and EXCLUDES hidden rows/cols (helper scaffolding).
   const { values } = evaluateGrid(cells);
-  const categories = (cells[0] ?? []).slice(1).map((v, i) => (v.trim() ? v.trim() : `Cat ${i + 1}`));
-  const series: Series[] = cells.slice(1).map((row, ri) => ({
-    name: (row[0] ?? "").trim() || `Series ${ri + 1}`,
-    color: seriesColors[ri] || PALETTE[ri % PALETTE.length],
-    values: categories.map((_, ci) => values[ri + 1]?.[ci + 1] ?? 0),
-    ...(seriesKinds[ri] ? { kind: seriesKinds[ri] } : {}),
-  }));
+  const header = cells[0] ?? [];
+  const catCols: number[] = []; // visible category cell-columns
+  const categories: string[] = [];
+  for (let c = 1; c < header.length; c++) {
+    if (hiddenCols.has(c)) continue;
+    catCols.push(c);
+    categories.push(header[c].trim() || `Cat ${c}`);
+  }
+  const series: Series[] = [];
+  for (let r = 1; r < cells.length; r++) {
+    if (hiddenRows.has(r)) continue;
+    const ri = r - 1;
+    series.push({
+      name: (cells[r][0] ?? "").trim() || `Series ${r}`,
+      color: seriesColors[ri] || PALETTE[ri % PALETTE.length],
+      values: catCols.map((c) => values[r]?.[c] ?? 0),
+      ...(seriesKinds[ri] ? { kind: seriesKinds[ri] } : {}),
+    });
+  }
   return { type: "barColumn", categories, series };
+}
+
+/** Hide the selected rows / columns (helper scaffolding) from view + chart. */
+export function hideSelectedRows(): void {
+  const { r0, r1 } = selRect();
+  for (let r = Math.max(1, r0); r <= r1; r++) hiddenRows.add(r);
+  render();
+  emit();
+}
+export function hideSelectedCols(): void {
+  const { c0, c1 } = selRect();
+  for (let c = Math.max(1, c0); c <= c1; c++) hiddenCols.add(c);
+  render();
+  emit();
+}
+export function unhideAll(): void {
+  hiddenRows.clear();
+  hiddenCols.clear();
+  render();
+  emit();
+}
+export function hasHidden(): boolean {
+  return hiddenRows.size > 0 || hiddenCols.size > 0;
+}
+
+// ---- structural edits (operate on the raw cells, so formulas are preserved) ----
+// Structural edits clear hidden flags to avoid index-shift bugs (documented).
+function clearHidden(): void {
+  hiddenRows.clear();
+  hiddenCols.clear();
+}
+
+export function gridAddSeries(): void {
+  clearHidden();
+  const at = active.r === 0 ? 1 : Math.min(cells.length, active.r + 1); // below the active series; top if in header
+  const width = cells[0]?.length ?? 1;
+  const row = Array(width).fill("");
+  row[0] = `Series ${cells.length}`;
+  cells.splice(at, 0, row);
+  seriesColors.splice(at - 1, 0, PALETTE[(at - 1) % PALETTE.length]);
+  seriesKinds.splice(at - 1, 0, undefined);
+  clampActive();
+  render();
+  emit();
+}
+
+export function gridRemoveSeries(): void {
+  clearHidden();
+  const { r0, r1 } = selRect();
+  const from = Math.max(1, r0);
+  const count = Math.min(Math.min(cells.length - 1, r1) - from + 1, cells.length - 2); // keep ≥1 series
+  if (count <= 0) return;
+  cells.splice(from, count);
+  seriesColors.splice(from - 1, count);
+  seriesKinds.splice(from - 1, count);
+  clampActive();
+  render();
+  emit();
+}
+
+export function gridAddCategory(): void {
+  clearHidden();
+  const width = cells[0]?.length ?? 1;
+  const at = Math.max(1, active.c); // left of the active category
+  cells.forEach((row, r) => row.splice(at, 0, r === 0 ? `Cat ${width}` : ""));
+  clampActive();
+  render();
+  emit();
+}
+
+export function gridRemoveCategory(): void {
+  clearHidden();
+  const width = cells[0]?.length ?? 1;
+  const { c0, c1 } = selRect();
+  const from = Math.max(1, c0);
+  const count = Math.min(Math.min(width - 1, c1) - from + 1, width - 2); // keep ≥1 category
+  if (count <= 0) return;
+  cells.forEach((row) => row.splice(from, count));
+  clampActive();
+  render();
+  emit();
+}
+
+export function gridTranspose(): void {
+  clearHidden();
+  const R = cells.length;
+  const C = cells[0]?.length ?? 1;
+  const out: Cells = [];
+  for (let c = 0; c < C; c++) {
+    const row: string[] = [];
+    for (let r = 0; r < R; r++) row.push(cells[r][c] ?? "");
+    out.push(row);
+  }
+  cells = out;
+  const nSer = Math.max(0, out.length - 1);
+  seriesColors = Array.from({ length: nSer }, (_, i) => PALETTE[i % PALETTE.length]);
+  seriesKinds = Array(nSer).fill(undefined);
+  clampActive();
+  render();
+  emit();
 }
 
 export function setSeriesColor(index: number, color: string): void {
@@ -134,6 +273,14 @@ export function setSeriesColor(index: number, color: string): void {
 
 export function setSeriesKind(index: number, kind: "bar" | "line"): void {
   seriesKinds[index] = kind;
+}
+
+/** Recolor all series from a palette (cycled) without touching the cells/formulas. */
+export function applyPalette(palette: string[]): void {
+  const nSer = Math.max(0, cells.length - 1);
+  for (let i = 0; i < nSer; i++) seriesColors[i] = palette[i % palette.length];
+  render();
+  emit();
 }
 
 /** The active cell (row 0 = categories, col 0 = series). Used by remove-at-cursor. */
@@ -154,8 +301,10 @@ function render(): void {
   const table = document.createElement("table");
   table.className = "xgrid";
   cells.forEach((row, r) => {
+    if (hiddenRows.has(r)) return; // hidden helper row
     const tr = document.createElement("tr");
     row.forEach((val, c) => {
+      if (hiddenCols.has(c)) return; // hidden helper column
       const td = document.createElement("td");
       const inp = document.createElement("input");
       inp.className = "xcell" + (r === 0 || c === 0 ? " xhead" : "");
