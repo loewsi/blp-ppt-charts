@@ -65,6 +65,9 @@ button.ghost:hover { background: var(--blp-pale); }
 }
 .xcell.xhead { font-weight: 600; color: var(--blp-dark); background: var(--blp-pale); text-align: left; }
 .xcell.sel { background: #cfe0ff; }
+.xcell.xhead.sel { background: #a9c8ff; }
+/* Active cell: a solid blue ring, shown whether or not the input is focused. */
+.xcell.active { box-shadow: inset 0 0 0 2px var(--blp-blue); background: #fff; position: relative; z-index: 1; }
 .xcell:focus { box-shadow: inset 0 0 0 2px var(--blp-blue); background: #fff; }
 .grid-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
 table { border-collapse: collapse; width: 100%; }
