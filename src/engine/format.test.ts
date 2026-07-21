@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatNumber, formatPercent } from "./format";
+import { formatNumber, formatPercent, segmentLabel } from "./format";
 import { DEFAULT_NUMBER_FORMAT } from "../model/chartModel";
 
 const base = DEFAULT_NUMBER_FORMAT;
@@ -66,6 +66,16 @@ describe("formatNumber", () => {
 
   it("adds a plus sign to positives when enabled", () => {
     expect(formatNumber(5, { ...base, plusSign: true })).toBe("+5");
+  });
+});
+
+describe("segmentLabel", () => {
+  const f = { ...base, decimals: 0 };
+  it("value / percent / combos", () => {
+    expect(segmentLabel(25, 100, "value", f)).toBe("25");
+    expect(segmentLabel(25, 100, "percent", f)).toBe("25%");
+    expect(segmentLabel(25, 100, "valuePercent", f)).toBe("25 (25%)");
+    expect(segmentLabel(25, 100, "percentValue", f)).toBe("25% (25)");
   });
 });
 

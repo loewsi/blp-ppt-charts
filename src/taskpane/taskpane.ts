@@ -222,7 +222,7 @@ const OPTION_IDS = [
   "optPieHole", "optScatterQuadrant", "optScatterAxes",
   "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
-  "labelOverflow",
+  "labelOverflow", "labelMode",
   "fontFamily", "segFontSize", "totFontSize",
   "nfDecimals", "nfScale", "nfPrefix", "nfSuffix", "nfHideZero",
   "nfThousands", "nfSep", "nfParens", "nfPlus",
@@ -687,6 +687,7 @@ function readOptions(): ChartOptions {
     cagrSeries: idx1("optCagrSeries"),
     cagrPeriods: Math.max(0, Number(v("optCagrPeriods")) || 0),
     labelOverflow: v("labelOverflow") as "inside" | "outside",
+    labelMode: v("labelMode") as "value" | "percent" | "valuePercent" | "percentValue",
     fontFamily: v("fontFamily"),
     segmentFontSize: clampInt(Number(v("segFontSize")), 6, 24),
     totalFontSize: clampInt(Number(v("totFontSize")), 6, 24),
@@ -740,6 +741,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optCagrSeries") as HTMLInputElement).value = String(o.cagrSeries + 1);
   (byId("optCagrPeriods") as HTMLInputElement).value = String(o.cagrPeriods);
   (byId("labelOverflow") as HTMLSelectElement).value = o.labelOverflow;
+  (byId("labelMode") as HTMLSelectElement).value = o.labelMode;
   (byId("fontFamily") as HTMLSelectElement).value = o.fontFamily;
   (byId("segFontSize") as HTMLInputElement).value = String(o.segmentFontSize);
   (byId("totFontSize") as HTMLInputElement).value = String(o.totalFontSize);

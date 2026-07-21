@@ -1,7 +1,7 @@
 import type { ChartModel } from "../model/chartModel";
 import { DEFAULT_OPTIONS } from "../model/chartModel";
 import type { Primitive, ShapeMeta } from "./primitives";
-import { formatNumber, formatPercent } from "./format";
+import { formatNumber, segmentLabel } from "./format";
 
 const AXIS_COLOR = "#001C54";
 const GRID_COLOR = "#D7E2F4";
@@ -80,7 +80,9 @@ export function layoutMekko(model: ChartModel): Primitive[] {
         const meta: ShapeMeta = { objectType: "segment", seriesIndex: si, categoryIndex: ci };
         prims.push({ kind: "rect", x, y: yTop, w: colW, h, fill: data.series[si].color, meta });
         if (opt.showValueLabels && h >= MIN_SEG && colW >= 16) {
-          const text = formatPercent(val, total, nf.decimals, nf.sep);
+          // Mekko defaults to % (its point) but honors an explicit value/combo mode.
+          const mode = opt.labelMode === "value" ? "percent" : opt.labelMode;
+          const text = segmentLabel(val, total, mode, nf);
           const w = estTextW(text, opt.segmentFontSize);
           prims.push({ kind: "text", x: x + colW / 2 - w / 2, y: yTop + h / 2 - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci } });
         }

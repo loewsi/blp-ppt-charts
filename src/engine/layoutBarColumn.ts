@@ -1,7 +1,7 @@
 import type { ChartModel } from "../model/chartModel";
 import { DEFAULT_OPTIONS } from "../model/chartModel";
 import type { Primitive, ShapeMeta } from "./primitives";
-import { formatNumber, formatPercent } from "./format";
+import { formatNumber, segmentLabel } from "./format";
 
 const AXIS_COLOR = "#001C54";
 const GRID_COLOR = "#D7E2F4";
@@ -365,7 +365,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         }
         const r = emitRect(slotStart, catThick, seg0, seg1, color, { objectType: "segment", seriesIndex: si, categoryIndex: ci });
         if (opt.showValueLabels) {
-          const text = norm100 ? formatPercent(raw, total, nf.decimals, nf.sep) : formatNumber(raw, nf);
+          // 100% stacked defaults to % (its whole point) but still honors an explicit mode.
+          const mode = norm100 && opt.labelMode === "value" ? "percent" : opt.labelMode;
+          const text = segmentLabel(raw, total, mode, nf);
           const segPx = Math.abs(v) * vScale;
           if (text) {
             if (opt.labelOverflow === "outside") {
@@ -394,7 +396,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         if (raw === 0) continue;
         const r = emitRect(slotStart + sidx * laneThick, laneThick, 0, raw, color, { objectType: "segment", seriesIndex: si, categoryIndex: ci });
         if (opt.showValueLabels) {
-          const text = formatNumber(raw, nf);
+          const text = segmentLabel(raw, total, opt.labelMode, nf);
           const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
           if (text) {
             const big = Math.abs(raw) * vScale >= MIN_SEG_FOR_LABEL;

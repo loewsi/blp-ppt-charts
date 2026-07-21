@@ -87,6 +87,7 @@ export interface ChartOptions {
   axisMin: number | null; // fix the value-axis minimum (null = auto)
   axisMax: number | null; // fix the value-axis maximum (null = auto)
   labelOverflow: "inside" | "outside"; // small-segment labels: keep inside (chip + offset) or place outside
+  labelMode: "value" | "percent" | "valuePercent" | "percentValue"; // what a segment label shows
   fontFamily: string; // font for all labels
   segmentFontSize: number; // pt, segment/value labels
   totalFontSize: number; // pt, total labels
@@ -197,6 +198,7 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   axisMin: null,
   axisMax: null,
   labelOverflow: "inside",
+  labelMode: "value",
   fontFamily: "Roboto",
   segmentFontSize: 9,
   totalFontSize: 10,

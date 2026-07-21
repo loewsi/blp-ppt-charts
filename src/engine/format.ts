@@ -41,6 +41,27 @@ export function formatNumber(value: number, f: NumberFormat): string {
   return f.plusSign ? `+${core}` : core;
 }
 
+/** A segment label showing value, percent, or a combination of both. */
+export function segmentLabel(
+  value: number,
+  total: number,
+  mode: "value" | "percent" | "valuePercent" | "percentValue",
+  f: NumberFormat
+): string {
+  const val = formatNumber(value, f);
+  const pct = formatPercent(value, total, f.decimals, f.sep);
+  switch (mode) {
+    case "percent":
+      return pct;
+    case "valuePercent":
+      return val && pct ? `${val} (${pct})` : val || pct;
+    case "percentValue":
+      return pct && val ? `${pct} (${val})` : pct || val;
+    default:
+      return val;
+  }
+}
+
 /** Percent of a total, e.g. for 100% stacked labels: always "NN%". */
 export function formatPercent(value: number, total: number, decimals = 0, sep: SeparatorStyle = "comma"): string {
   if (total === 0) return "";
