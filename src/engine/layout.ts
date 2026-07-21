@@ -2,6 +2,7 @@ import type { ChartModel, ChartType } from "../model/chartModel";
 import type { Primitive } from "./primitives";
 import { layoutBarColumn } from "./layoutBarColumn";
 import { layoutLine } from "./layoutLine";
+import { layoutMekko } from "./layoutMekko";
 import { layoutPie } from "./layoutPie";
 import { layoutScatter } from "./layoutScatter";
 import { layoutWaterfall } from "./layoutWaterfall";
@@ -15,7 +16,7 @@ const REGISTRY: Record<ChartType, LayoutFn> = {
   waterfall: layoutWaterfall,
   pie: layoutPie,
   scatter: layoutScatter,
-  mekko: layoutBarColumn, // TODO D11: layoutMekko
+  mekko: layoutMekko,
 };
 
 export function computeLayout(model: ChartModel): Primitive[] {
