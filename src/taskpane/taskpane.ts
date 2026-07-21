@@ -245,6 +245,26 @@ function wire(): void {
       scheduleApply();
     })
   );
+  byId("chartType").addEventListener("change", () => maybeNameScatterRows());
+}
+
+/** When switching to scatter, name the first rows X / Y / Size so the mapping is clear
+ *  (only if they still have default names). */
+function maybeNameScatterRows(): void {
+  if (readChartType() !== "scatter") return;
+  currentData = readGrid();
+  const names = ["X", "Y", "Size"];
+  let changed = false;
+  currentData.series.forEach((s, i) => {
+    if (i < 3 && /^(Product |Series |S\d|Cat )/i.test(s.name)) {
+      s.name = names[i];
+      changed = true;
+    }
+  });
+  if (changed) {
+    renderGrid();
+    scheduleApply();
+  }
 }
 
 /** Hide the option controls that don't apply to the current chart type / toggles,
