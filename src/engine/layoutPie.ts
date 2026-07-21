@@ -4,7 +4,7 @@ import type { Primitive, ShapeMeta } from "./primitives";
 import { formatNumber, formatPercent } from "./format";
 
 const LABEL_DARK = "#001C54";
-const MAX_FACET = 0.2618; // 15° — small enough that the facet fan reads as a circle
+const MAX_FACET = 0.06; // ≈3.4° per facet → a ~105-gon, visually smooth
 const LABEL_PAD = 34; // room for the category labels around the circle
 
 /**

@@ -27,6 +27,24 @@ describe("layoutPie", () => {
     expect(prims.filter((s) => s.meta?.objectType === "categoryLabel").length).toBe(4);
   });
 
+  it("has every facet's apex converge on the pie centre (roundness invariant)", () => {
+    // Pie centre for a 300×300 box.
+    const cx = 150;
+    const cy = 150;
+    for (const f of facets(layoutPie(model()))) {
+      if (f.kind !== "triangle") continue;
+      // Apex = top-centre of the box, rotated about the box centre (clockwise, y-down).
+      const ox = f.x + f.w / 2;
+      const oy = f.y + f.h / 2;
+      const th = (f.rotation * Math.PI) / 180;
+      const s = Math.sin(th);
+      const c = Math.cos(th);
+      const apexX = ox + (s * f.h) / 2;
+      const apexY = oy - (c * f.h) / 2;
+      expect(Math.hypot(apexX - cx, apexY - cy)).toBeLessThan(1); // all facets meet at the centre
+    }
+  });
+
   it("keeps every facet corner within the bounding box", () => {
     const prims = layoutPie(model());
     for (const f of facets(prims)) {
