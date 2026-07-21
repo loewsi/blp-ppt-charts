@@ -30,6 +30,7 @@ import {
   repairDuplicateChartIds,
 } from "../engine/persistence";
 import { newId } from "../util/id";
+import { createOrUpdateAgenda } from "../office/agenda";
 import { mountGrid, setGridData, getGridData, setSeriesColor, setSeriesKind, getActive } from "./grid";
 
 // ---- state ---------------------------------------------------------------
@@ -234,6 +235,7 @@ function wire(): void {
   byId("removeCatBtn").addEventListener("click", () => removeCategory());
   byId("transposeBtn").addEventListener("click", () => transpose());
   byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
+  byId("agendaBtn").addEventListener("click", () => guard(doAgenda));
   // Live apply: changing any style/format control re-renders the current chart.
   OPTION_IDS.forEach((id) =>
     byId(id).addEventListener("change", () => {
@@ -408,6 +410,17 @@ function transpose(): void {
   currentData = { type: "barColumn", categories: newCategories, series: newSeries };
   renderGrid();
   scheduleApply();
+}
+
+async function doAgenda(): Promise<void> {
+  const raw = (byId("agendaList") as HTMLTextAreaElement).value;
+  const chapters = raw.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (chapters.length === 0) {
+    status("Add at least one chapter (one per line).", true);
+    return;
+  }
+  const result = await PowerPoint.run((context) => createOrUpdateAgenda(context, chapters));
+  status(`Agenda ${result}.`);
 }
 
 async function applyColors(): Promise<void> {
