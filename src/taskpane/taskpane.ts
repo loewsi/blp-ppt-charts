@@ -31,6 +31,7 @@ import {
 } from "../engine/persistence";
 import { newId } from "../util/id";
 import { createOrUpdateAgenda } from "../office/agenda";
+import { shadesFrom } from "../util/color";
 import { mountGrid, setGridData, getGridData, setSeriesColor, setSeriesKind, getActive } from "./grid";
 
 // ---- state ---------------------------------------------------------------
@@ -236,6 +237,7 @@ function wire(): void {
   byId("transposeBtn").addEventListener("click", () => transpose());
   byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
   byId("agendaBtn").addEventListener("click", () => guard(doAgenda));
+  byId("shadeBtn").addEventListener("click", () => applyShades());
   // Live apply: changing any style/format control re-renders the current chart.
   OPTION_IDS.forEach((id) =>
     byId(id).addEventListener("change", () => {
@@ -410,6 +412,17 @@ function transpose(): void {
   currentData = { type: "barColumn", categories: newCategories, series: newSeries };
   renderGrid();
   scheduleApply();
+}
+
+/** Recolor every series as auto-generated shades of the picked base color. */
+function applyShades(): void {
+  const base = (byId("shadeBase") as HTMLInputElement).value;
+  currentData = readGrid();
+  const shades = shadesFrom(base, currentData.series.length);
+  currentData.series.forEach((s, i) => (s.color = shades[i]));
+  renderGrid();
+  scheduleApply();
+  status("Applied shades of the base color.");
 }
 
 async function doAgenda(): Promise<void> {
