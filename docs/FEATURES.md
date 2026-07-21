@@ -25,6 +25,9 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Data & editing
 - ✅ Excel-like grid (edit categories/series/values, keyboard nav, range select, Shift+Space, Ctrl +/−, copy/paste)
+- 🔵 **In-cell formulas** — `=B2+B3`, `=SUM(B2:D2)`, refs/ranges/`+−×÷`/SUM·AVG·MIN·MAX·COUNT; view shows the result, edit shows the formula *(new, session-live)*
+- ⚠️ **Formulas don't yet survive save→reopen** (model stores computed values, not raw cells) — needs the source-of-truth change below
+- ⬜ Hide/fold helper rows & columns; fill-handle (drag-to-fill) — pending the same change
 - ⚠️ Ctrl+Space (column select) is captured by a Windows OS shortcut — can't be intercepted from the pane
 - ✅ Add / remove / transpose series & categories (remove targets the cursor; **insert-at-cursor: verify**)
 - ✅ Live apply — typing a value commits on Enter/Tab/blur
