@@ -27,9 +27,8 @@ function formatBody(abs: number, decimals: number, grouping: boolean, sep: Separ
 }
 
 export function formatNumber(value: number, f: NumberFormat): string {
-  let x = value;
-  if (f.scale === "k") x = x / 1000;
-  else if (f.scale === "M") x = x / 1_000_000;
+  // displayed = value × 10^scaleExp (e.g. scaleExp −3 shows a value in thousands).
+  const x = f.scaleExp ? value * Math.pow(10, f.scaleExp) : value;
 
   // Hide only when the DISPLAYED value (after scale + rounding) is zero.
   const shown = Number(x.toFixed(f.decimals));

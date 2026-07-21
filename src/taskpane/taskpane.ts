@@ -292,7 +292,8 @@ function readGrid(): ChartData {
 function addSeries(): void {
   currentData = readGrid();
   const i = currentData.series.length;
-  currentData.series.push({
+  const at = Math.min(currentData.series.length, Math.max(0, getActive().r - 1) + 1); // below the cursor's series
+  currentData.series.splice(at, 0, {
     name: `Series ${i + 1}`,
     color: PALETTE[i % PALETTE.length],
     values: currentData.categories.map(() => 0),
@@ -312,8 +313,9 @@ function removeSeries(): void {
 
 function addCategory(): void {
   currentData = readGrid();
-  currentData.categories.push(`Cat ${currentData.categories.length + 1}`);
-  currentData.series.forEach((s) => s.values.push(0));
+  const at = Math.min(currentData.categories.length, Math.max(0, getActive().c - 1)); // left of the cursor's category
+  currentData.categories.splice(at, 0, `Cat ${currentData.categories.length + 1}`);
+  currentData.series.forEach((s) => s.values.splice(at, 0, 0));
   renderGrid();
   scheduleApply();
 }
@@ -575,7 +577,7 @@ function readOptions(): ChartOptions {
     totalFontSize: clampInt(Number(v("totFontSize")), 6, 24),
     numberFormat: {
       decimals: clampInt(Number(v("nfDecimals")), 0, 3),
-      scale: v("nfScale") as "none" | "k" | "M",
+      scaleExp: Number(v("nfScale")) || 0,
       prefix: v("nfPrefix"),
       suffix: v("nfSuffix"),
       hideZero: c("nfHideZero"),
@@ -622,7 +624,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("segFontSize") as HTMLInputElement).value = String(o.segmentFontSize);
   (byId("totFontSize") as HTMLInputElement).value = String(o.totalFontSize);
   (byId("nfDecimals") as HTMLInputElement).value = String(o.numberFormat.decimals);
-  (byId("nfScale") as HTMLSelectElement).value = o.numberFormat.scale;
+  (byId("nfScale") as HTMLSelectElement).value = String(o.numberFormat.scaleExp);
   (byId("nfPrefix") as HTMLInputElement).value = o.numberFormat.prefix;
   (byId("nfSuffix") as HTMLInputElement).value = o.numberFormat.suffix;
   (byId("nfHideZero") as HTMLInputElement).checked = o.numberFormat.hideZero;

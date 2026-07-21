@@ -37,7 +37,7 @@ export type SeparatorStyle = "locale" | "comma" | "dot" | "apos" | "space";
 /** How numbers render in labels/totals/axis. Reused everywhere (see format.ts). */
 export interface NumberFormat {
   decimals: number; // 0..3
-  scale: "none" | "k" | "M"; // divide by 1 / 1e3 / 1e6 (no letter appended — add your own suffix)
+  scaleExp: number; // displayed = value × 10^scaleExp (e.g. −3 shows thousands as ×10⁻³); 0 = none
   prefix: string; // e.g. "$"
   suffix: string; // e.g. " kg"
   hideZero: boolean; // blank instead of 0
@@ -135,16 +135,21 @@ export const PALETTES: Record<string, string[]> = {
     "#2FA84F",
     "#7B4FE0",
   ],
+  green: ["#0B7A3B", "#12A150", "#3FBE6E", "#7FD6A0", "#0A5C2E", "#B8E9CC", "#064023", "#5AC985"],
+  red: ["#B3261E", "#E8412C", "#F0715F", "#F7A99B", "#7F1B15", "#FBD0C8", "#5A120E", "#EF8877"],
+  orange: ["#B35A00", "#F5820A", "#FBA94C", "#FDCB8E", "#7F3F00", "#FEE3C2", "#5A2D00", "#FCB865"],
+  // Categorical mix for charts where each series should be clearly distinct.
+  multi: ["#2E75FF", "#E8412C", "#12A150", "#F5820A", "#7B4FE0", "#00A6A6", "#E0349B", "#F5C518"],
   grayscale: ["#2B2B2B", "#555555", "#808080", "#A9A9A9", "#C7C7C7", "#E2E2E2"],
 };
 
 export const DEFAULT_NUMBER_FORMAT: NumberFormat = {
   decimals: 0,
-  scale: "none",
+  scaleExp: 0,
   prefix: "",
   suffix: "",
   hideZero: true,
-  thousandsSep: false,
+  thousandsSep: true, // group thousands by default (Silvan's preference)
   sep: "comma",
   negParens: false,
   plusSign: false,
@@ -205,12 +210,22 @@ export function defaultData(): ChartData {
 /** Fill in schemaVersion/options/type for models saved by older builds. */
 export function normalizeModel(m: ChartModel): ChartModel {
   const legacyVersion = (m as { version?: number }).version;
+  let options = defaultOptions();
+  if (m.options) {
+    const nfIn = m.options.numberFormat as (NumberFormat & { scale?: "none" | "k" | "M" }) | undefined;
+    // Migrate the old scale enum (none/k/M) to a power-of-ten exponent.
+    const scaleExp =
+      nfIn?.scaleExp ?? (nfIn?.scale === "k" ? -3 : nfIn?.scale === "M" ? -6 : 0);
+    options = {
+      ...DEFAULT_OPTIONS,
+      ...m.options,
+      numberFormat: { ...DEFAULT_NUMBER_FORMAT, ...m.options.numberFormat, scaleExp },
+    };
+  }
   return {
     ...m,
     schemaVersion: m.schemaVersion ?? legacyVersion ?? CURRENT_SCHEMA_VERSION,
     data: { ...m.data, type: CHART_TYPES.includes(m.data?.type) ? m.data.type : "barColumn" },
-    options: m.options
-      ? { ...DEFAULT_OPTIONS, ...m.options, numberFormat: { ...DEFAULT_NUMBER_FORMAT, ...m.options.numberFormat } }
-      : defaultOptions(),
+    options,
   };
 }

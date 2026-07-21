@@ -22,13 +22,17 @@ describe("formatNumber", () => {
     expect(formatNumber(5, { ...base, prefix: "$", suffix: "x" })).toBe("$5x");
   });
 
-  it("scales thousands (divides only, no letter — user adds the suffix)", () => {
-    expect(formatNumber(1000, { ...base, scale: "k", decimals: 0 })).toBe("1");
-    expect(formatNumber(1500, { ...base, scale: "k", decimals: 1, suffix: "k" })).toMatch(/^1[.,]5k$/);
+  it("scales by a power of ten (×10⁻³ shows thousands, no letter)", () => {
+    expect(formatNumber(1000, { ...base, scaleExp: -3, decimals: 0 })).toBe("1");
+    expect(formatNumber(1500, { ...base, scaleExp: -3, decimals: 1, suffix: "k" })).toMatch(/^1[.,]5k$/);
   });
 
-  it("scales millions (divides only, no letter)", () => {
-    expect(formatNumber(3_000_000, { ...base, scale: "M", decimals: 0 })).toBe("3");
+  it("scales millions with ×10⁻⁶", () => {
+    expect(formatNumber(3_000_000, { ...base, scaleExp: -6, decimals: 0 })).toBe("3");
+  });
+
+  it("scales up small values with a positive exponent", () => {
+    expect(formatNumber(0.005, { ...base, scaleExp: 3, decimals: 0 })).toBe("5"); // 0.005 × 10³
   });
 
   it("honors an explicit separator style", () => {

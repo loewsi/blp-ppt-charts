@@ -326,12 +326,13 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         const v = norm100 ? (total === 0 ? 0 : raw / total) : raw;
         const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
         if (v === 0) {
-          // No bar to draw, but surface a "0" at the baseline when zeros aren't hidden.
+          // No bar to draw, but surface a "0" at the running stack position (in order),
+          // not pinned to the axis, when zeros aren't hidden.
           if (!norm100 && opt.showValueLabels) {
             const t = formatNumber(raw, nf);
             if (t) {
-              const cx = isColumn ? plotLeft + slotStart + catThick / 2 : xv(0);
-              const cy = isColumn ? yv(0) : plotTop + slotStart + catThick / 2;
+              const cx = isColumn ? plotLeft + slotStart + catThick / 2 : xv(cumPos);
+              const cy = isColumn ? yv(cumPos) : plotTop + slotStart + catThick / 2;
               chips.push({ c: isColumn ? cy : cx, cx, cy, text: t, fill: color, meta: m });
             }
           }

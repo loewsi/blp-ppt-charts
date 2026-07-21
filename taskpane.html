@@ -98,9 +98,12 @@
           </label>
           <label>Magnitude
             <select id="nfScale">
-              <option value="none">×1</option>
-              <option value="k">÷ 1,000</option>
-              <option value="M">÷ 1,000,000</option>
+              <option value="0">None</option>
+              <option value="-3">×10⁻³ (thousands)</option>
+              <option value="-6">×10⁻⁶ (millions)</option>
+              <option value="-9">×10⁻⁹ (billions)</option>
+              <option value="3">×10³</option>
+              <option value="6">×10⁶</option>
             </select>
           </label>
           <label>Prefix <input id="nfPrefix" type="text" placeholder="$" /></label>
@@ -115,7 +118,7 @@
             </select>
           </label>
           <label class="chk"><input id="nfHideZero" type="checkbox" checked /> Hide zeros</label>
-          <label class="chk"><input id="nfThousands" type="checkbox" /> Group thousands</label>
+          <label class="chk"><input id="nfThousands" type="checkbox" checked /> Group thousands</label>
           <label class="chk"><input id="nfParens" type="checkbox" /> Negatives ( )</label>
           <label class="chk"><input id="nfPlus" type="checkbox" /> Plus sign</label>
         </div>
@@ -173,6 +176,10 @@
           <select id="colorScheme">
             <option value="master">Master accents</option>
             <option value="blue">Blue</option>
+            <option value="green">Green</option>
+            <option value="red">Red</option>
+            <option value="orange">Orange</option>
+            <option value="multi">Multi-color</option>
             <option value="grayscale">Grayscale</option>
           </select>
           <button id="applyColorsBtn" class="ghost">Apply</button>
