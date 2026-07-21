@@ -62,6 +62,16 @@ export function planDuplicateRepair(entries: RepairEntry[]): RepairAssignment[] 
   return out;
 }
 
+/** Pure: legend entries whose id has no chart anchor (chart was deleted → orphan legend). */
+export function planOrphanLegends(entries: RepairEntry[]): number[] {
+  const withAnchor = new Set(entries.filter((e) => e.hasModel).map((e) => e.id));
+  const out: number[] = [];
+  entries.forEach((e, i) => {
+    if (e.part === "legend" && !withAnchor.has(e.id)) out.push(i);
+  });
+  return out;
+}
+
 /** Find duplicated chart ids on the slide and reassign fresh ids to the copies. */
 export async function repairDuplicateChartIds(
   context: PowerPoint.RequestContext,
@@ -93,7 +103,21 @@ export async function repairDuplicateChartIds(
   }));
 
   const plan = planDuplicateRepair(entries);
-  if (plan.length === 0) return 0;
+  const orphans = planOrphanLegends(entries);
+  if (plan.length === 0 && orphans.length === 0) return 0;
+
+  // Next free "Chart N" number, so a pasted copy doesn't reuse the original's name.
+  let maxNum = 0;
+  for (const r of refs) {
+    if (r.model.isNullObject) continue;
+    try {
+      const nm = (JSON.parse(r.model.value) as ChartModel).name ?? "";
+      const match = /(\d+)\s*$/.exec(nm);
+      if (match) maxNum = Math.max(maxNum, Number(match[1]));
+    } catch {
+      /* ignore */
+    }
+  }
 
   for (const asg of plan) {
     const fresh = newId();
@@ -102,14 +126,19 @@ export async function repairDuplicateChartIds(
     try {
       const m = JSON.parse(anchor.model.value) as ChartModel;
       m.id = fresh;
+      m.name = `Chart ${++maxNum}`; // the pasted copy gets the next free number
       anchor.s.tags.add(TAG_MODEL, JSON.stringify(m));
     } catch {
       // leave a malformed model alone; the id split still de-conflicts editing
     }
     if (asg.legendIndex != null) refs[asg.legendIndex].s.tags.add(TAG_ID, fresh);
   }
+
+  // Delete legend groups left behind when their chart was deleted in PowerPoint.
+  for (const i of orphans) refs[i].s.delete();
+
   await context.sync();
-  return plan.length;
+  return plan.length + orphans.length;
 }
 
 /** Read every BLP chart on a slide by parsing the model stamped on anchor shapes. */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planDuplicateRepair, type RepairEntry } from "./persistence";
+import { planDuplicateRepair, planOrphanLegends, type RepairEntry } from "./persistence";
 
 const chart = (id: string, cx: number, cy: number): RepairEntry => ({ id, hasModel: true, part: "chart", cx, cy });
 const legend = (id: string, cx: number, cy: number): RepairEntry => ({ id, hasModel: false, part: "legend", cx, cy });
@@ -34,5 +34,17 @@ describe("planDuplicateRepair", () => {
   it("leaves other ids untouched while repairing one", () => {
     const plan = planDuplicateRepair([chart("A", 0, 0), chart("A", 20, 20), chart("B", 200, 0)]);
     expect(plan).toEqual([{ anchorIndex: 1, legendIndex: null }]);
+  });
+});
+
+describe("planOrphanLegends", () => {
+  it("flags a legend whose chart anchor is gone", () => {
+    // chart A intact; chart B was deleted but its legend (index 2) remains
+    const entries = [chart("A", 0, 0), legend("A", 0, 50), legend("B", 200, 50)];
+    expect(planOrphanLegends(entries)).toEqual([2]);
+  });
+
+  it("keeps legends that still have their chart", () => {
+    expect(planOrphanLegends([chart("A", 0, 0), legend("A", 0, 50)])).toEqual([]);
   });
 });
