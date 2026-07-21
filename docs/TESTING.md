@@ -16,7 +16,7 @@ Last updated: **2026-07-21 pm**.
 ## A1. Fixes from your 2026-07-21 pm feedback — please re-verify
 - [ ] Grid: `+ Series` inserts **below** the cursor (top when in the header row); `+ Category` **left** of the cursor, consistently; **multi-row/col select deletes all** selected.
 - [ ] Excel paste larger than the grid **grows the table**.
-- [ ] Segment labels near the top **offset sideways** so they don't collide with the total *(if I got to it — else still stacking)*.
+- [ ] A top segment label that would hit the total **offsets sideways** (not just the "0").
 - [ ] **Arrows**: solid lines (no dashed); the line no longer pokes past the arrow tip.
 - [ ] **CAGR arrow**: now **sloped** (from above one total to above the other), rounded bubble, **number-only** (e.g. `+50%`, no "CAGR").
 - [ ] **Line chart**: no totals; difference/CAGR compare **series** (not totals).
