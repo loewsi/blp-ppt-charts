@@ -151,6 +151,19 @@ function makeShapes(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoin
   }
 
   if (p.kind === "line") {
+    if (p.dashed) {
+      // A real dashed PowerPoint connector (axis-aligned guides only, so no slant issues).
+      const s = shapes.addLine(PowerPoint.ConnectorType.straight, {
+        left: Math.min(p.x1, p.x2),
+        top: Math.min(p.y1, p.y2),
+        width: Math.abs(p.x2 - p.x1),
+        height: Math.abs(p.y2 - p.y1),
+      });
+      s.lineFormat.color = p.color;
+      s.lineFormat.weight = p.weight;
+      s.lineFormat.dashStyle = PowerPoint.ShapeLineDashStyle.dash;
+      return [s];
+    }
     return [makeLine(shapes, p.x1, p.y1, p.x2, p.y2, p.color, p.weight)];
   }
 

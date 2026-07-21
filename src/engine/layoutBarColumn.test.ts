@@ -370,10 +370,21 @@ describe("layoutBarColumn — difference & CAGR arrows", () => {
     expect(arrowText(prims)[0].text).toBe("+20 (+50%)"); // 20/40 = 50%
   });
 
-  it("CAGR arrow labels the compound growth", () => {
+  it("CAGR arrow is a horizontal arrow above the chart, labelled with the growth", () => {
     // total A=40 → B=60 over 1 period → +50%
     const prims = layoutBarColumn(model({ cagrArrow: "total", cagrFrom: 0, cagrTo: 1, cagrPeriods: 1 }));
-    expect(arrowText(prims)[0].text).toBe("CAGR +50%");
+    const arrow = prims.find((s) => s.kind === "arrow" && s.meta?.objectType === "cagrArrow");
+    expect(arrow && arrow.kind === "arrow" && Math.abs(arrow.y1 - arrow.y2) < 0.5).toBe(true); // horizontal
+    const label = prims.find((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "cagrArrow");
+    expect(label?.text).toBe("CAGR +50%");
+  });
+
+  it("difference arrow position follows diffPos (slot boundary)", () => {
+    const auto = layoutBarColumn(model({ diffArrow: "total", diffFrom: 0, diffTo: 1 }));
+    const pinned = layoutBarColumn(model({ diffArrow: "total", diffFrom: 0, diffTo: 1, diffPos: 0 }));
+    const arrowX = (p: ReturnType<typeof layoutBarColumn>) =>
+      (p.find((s) => s.kind === "arrow" && isArrow(s)) as { x1: number }).x1;
+    expect(arrowX(pinned)).toBeLessThan(arrowX(auto)); // pos 0 = far left, left of the auto midpoint
   });
 });
 

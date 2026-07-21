@@ -70,6 +70,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     else if (legendPos === "left") insLeft += legendW;
     else insRight += legendW;
   }
+  const cagrBand = opt.cagrArrow !== "off" && isColumn ? 20 : 0; // room for the CAGR arrow above the plot
+  insTop += cagrBand;
 
   const plotLeft = box.left + insLeft;
   const plotTop = box.top + insTop;
@@ -498,18 +500,38 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   const catValue = (ci: number, mode: "total" | "series", seriesIdx: number) =>
     mode === "total" ? totals[ci] || 0 : safe(data.series[clampIdx(seriesIdx, nSer)].values[ci]);
 
+  // Difference arrow: vertical double-headed arrow between two category levels,
+  // with dashed guides to each column top and a labelled delta. The arrow's
+  // horizontal position follows diffPos (a slot boundary), or the midpoint (auto).
   function drawSpanArrow(fromCi: number, toCi: number, y1: number, y2: number, label: string) {
     const kFrom = order.indexOf(fromCi);
     const kTo = order.indexOf(toCi);
     if (kFrom < 0 || kTo < 0) return;
     const xF = plotLeft + kFrom * slot + slot / 2;
     const xT = plotLeft + kTo * slot + slot / 2;
-    const xA = (xF + xT) / 2;
+    const xA =
+      opt.diffPos >= 0
+        ? plotLeft + Math.min(nCats, Math.max(0, Math.round(opt.diffPos))) * slot
+        : (xF + xT) / 2;
     prims.push({ kind: "line", x1: xF, y1, x2: xA, y2: y1, color: ARROW_COLOR, weight: 0.75, dashed: true, meta: { objectType: "differenceArrow" } });
     prims.push({ kind: "line", x1: xT, y1: y2, x2: xA, y2, color: ARROW_COLOR, weight: 0.75, dashed: true, meta: { objectType: "differenceArrow" } });
     prims.push({ kind: "arrow", x1: xA, y1, x2: xA, y2, color: ARROW_COLOR, weight: 1.25, doubleHeaded: true, meta: { objectType: "differenceArrow" } });
     const w = estTextW(label, 10);
     prims.push({ kind: "text", x: xA + 4, y: (y1 + y2) / 2 - 8, w, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "left", family: fam, bg: "#FFFFFF", meta: { objectType: "differenceArrow" } });
+  }
+
+  // CAGR arrow: a horizontal arrow above the plot from the "from" to the "to"
+  // category, with a white % bubble in the middle (think-cell style).
+  function drawCagrArrow(fromCi: number, toCi: number, label: string) {
+    const kFrom = order.indexOf(fromCi);
+    const kTo = order.indexOf(toCi);
+    if (kFrom < 0 || kTo < 0) return;
+    const xF = plotLeft + kFrom * slot + slot / 2;
+    const xT = plotLeft + kTo * slot + slot / 2;
+    const y = plotTop - cagrBand / 2 - 2; // in the reserved band above the plot
+    prims.push({ kind: "arrow", x1: xF, y1: y, x2: xT, y2: y, color: ARROW_COLOR, weight: 1.25, meta: { objectType: "cagrArrow" } });
+    const w = estTextW(label, 10) + 6;
+    prims.push({ kind: "text", x: (xF + xT) / 2 - w / 2, y: y - 8, w, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "center", family: fam, bg: "#FFFFFF", meta: { objectType: "cagrArrow" } });
   }
 
   if (opt.diffArrow !== "off" && isColumn && nCats >= 2) {
@@ -535,8 +557,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const v1 = catValue(fi, opt.cagrArrow, opt.cagrSeries);
       const v2 = catValue(ti, opt.cagrArrow, opt.cagrSeries);
       const periods = opt.cagrPeriods > 0 ? opt.cagrPeriods : Math.abs(order.indexOf(ti) - order.indexOf(fi));
-      const label = cagrLabel(v1, v2, periods);
-      drawSpanArrow(fi, ti, yv(v1), yv(v2), label);
+      drawCagrArrow(fi, ti, cagrLabel(v1, v2, periods));
     }
   }
 

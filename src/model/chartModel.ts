@@ -72,6 +72,7 @@ export interface ChartOptions {
   diffTo: number;
   diffSeries: number;
   diffPercent: boolean; // also show the % change in the label
+  diffPos: number; // horizontal slot boundary for the arrow (0=left of first cat … nCats=right of last); -1 = auto (midpoint)
   // CAGR (compound annual growth) arrow across a span of categories.
   cagrArrow: "off" | "total" | "series";
   cagrFrom: number;
@@ -178,6 +179,7 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   diffTo: 1,
   diffSeries: 0,
   diffPercent: false,
+  diffPos: -1,
   cagrArrow: "off",
   cagrFrom: 0,
   cagrTo: 1,

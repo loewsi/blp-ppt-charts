@@ -216,7 +216,7 @@ const OPTION_IDS = [
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
   "optLineSecondaryAxis", "optReverseSeries", "optRefColor", "optPieHole",
-  "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries",
+  "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
   "labelOverflow",
   "fontFamily", "segFontSize", "totFontSize",
@@ -566,6 +566,7 @@ function readOptions(): ChartOptions {
     diffTo: idx1("optDiffTo"),
     diffSeries: idx1("optDiffSeries"),
     diffPercent: c("optDiffPercent"),
+    diffPos: v("optDiffPos").trim() === "" ? -1 : Math.max(0, Number(v("optDiffPos")) || 0),
     cagrArrow: v("optCagrArrow") as "off" | "total" | "series",
     cagrFrom: idx1("optCagrFrom"),
     cagrTo: idx1("optCagrTo"),
@@ -614,6 +615,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optDiffFrom") as HTMLInputElement).value = String(o.diffFrom + 1);
   (byId("optDiffTo") as HTMLInputElement).value = String(o.diffTo + 1);
   (byId("optDiffSeries") as HTMLInputElement).value = String(o.diffSeries + 1);
+  (byId("optDiffPos") as HTMLInputElement).value = o.diffPos < 0 ? "" : String(o.diffPos);
   (byId("optCagrArrow") as HTMLSelectElement).value = o.cagrArrow;
   (byId("optCagrFrom") as HTMLInputElement).value = String(o.cagrFrom + 1);
   (byId("optCagrTo") as HTMLInputElement).value = String(o.cagrTo + 1);
