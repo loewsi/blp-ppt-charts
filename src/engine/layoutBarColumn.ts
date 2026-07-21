@@ -285,6 +285,18 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     const sw = 10;
     const gapx = 6;
     const textWs = data.series.map((s) => estTextW(s.name, 9)); // legend text sized to content
+    // Swatch: a filled square for bar series, a line + centre dot for line series.
+    const marker = (mx: number, myTop: number, i: number) => {
+      const c = data.series[i].color;
+      const meta: ShapeMeta = { objectType: "legendEntry", seriesIndex: i };
+      if (isLine(i)) {
+        const midY = myTop + sw / 2;
+        prims.push({ kind: "line", x1: mx, y1: midY, x2: mx + sw, y2: midY, color: c, weight: 2, meta });
+        prims.push({ kind: "rect", x: mx + sw / 2 - 2, y: midY - 2, w: 4, h: 4, fill: c, meta });
+      } else {
+        prims.push({ kind: "rect", x: mx, y: myTop, w: sw, h: sw, fill: c, meta });
+      }
+    };
     if (legendPos === "top" || legendPos === "bottom") {
       const itemGap = 14;
       const widths = textWs.map((tw) => sw + gapx + tw);
@@ -293,7 +305,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       // Just above / below the plot box (outside it).
       const y = legendPos === "top" ? box.top - legendH + 2 : box.top + box.height + 4;
       data.series.forEach((s, i) => {
-        prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+        marker(x, y + 8 - sw / 2, i);
         prims.push({ kind: "text", x: x + sw + gapx, y, w: textWs[i], h: 16, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, autofit: true, meta: { objectType: "legend", seriesIndex: i } });
         x += widths[i] + itemGap;
       });
@@ -302,7 +314,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const x = legendPos === "left" ? box.left - legendW : box.left + box.width + 4;
       let y = plotTop;
       data.series.forEach((s, i) => {
-        prims.push({ kind: "rect", x, y: y + 8 - sw / 2, w: sw, h: sw, fill: s.color, meta: { objectType: "legendEntry", seriesIndex: i } });
+        marker(x, y + 8 - sw / 2, i);
         prims.push({ kind: "text", x: x + sw + gapx, y: y + 1, w: Math.min(legendW - sw - gapx - 4, textWs[i]), h: 14, text: s.name, color: LABEL_DARK, size: 9, bold: false, align: "left", family: fam, autofit: true, meta: { objectType: "legend", seriesIndex: i } });
         y += 16;
       });

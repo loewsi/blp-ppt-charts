@@ -252,7 +252,6 @@ function wire(): void {
 function refreshVisibility(): void {
   const type = readChartType();
   const barFamily = type === "barColumn" || type === "combination" || type === "line";
-  const hasLine = type === "combination" || type === "line";
   const isPie = type === "pie";
 
   const showLabel = (inputId: string, show: boolean) => {
@@ -269,8 +268,13 @@ function refreshVisibility(): void {
    "optGridlines", "optAxis", "optAxisLine", "optLegend", "legendPosition", "optRefValue",
    "optAxisMin", "optAxisMax"].forEach((id) => showLabel(id, barFamily));
 
-  // Line/combination-only.
-  ["optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax"].forEach((id) => showLabel(id, hasLine));
+  // Combination only: the 2nd-axis toggle; its min/max only when the toggle is on.
+  const isCombination = type === "combination";
+  showLabel("optLineSecondaryAxis", isCombination);
+  const secOn = (byId("optLineSecondaryAxis") as HTMLInputElement).checked;
+  ["optLineAxisMin", "optLineAxisMax"].forEach((id) => showLabel(id, isCombination && secOn));
+  // Per-series "line" checkboxes only for combination.
+  document.querySelectorAll<HTMLElement>(".line-toggle").forEach((e) => (e.style.display = isCombination ? "" : "none"));
 
   // Pie-only / scatter-only.
   showLabel("optPieHole", isPie);
@@ -335,7 +339,7 @@ function renderSeriesColors(): void {
     name.textContent = s.name;
     // Per-series line toggle (combination charts): draw this series as a line.
     const lineWrap = document.createElement("label");
-    lineWrap.className = "chk mini";
+    lineWrap.className = "chk mini line-toggle"; // shown only for combination (refreshVisibility)
     const lineChk = document.createElement("input");
     lineChk.type = "checkbox";
     lineChk.checked = s.kind === "line";
