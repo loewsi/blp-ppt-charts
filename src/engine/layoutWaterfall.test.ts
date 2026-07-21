@@ -42,6 +42,33 @@ describe("layoutWaterfall", () => {
     expect(p.filter((s) => s.meta?.objectType === "categoryLabel").length).toBe(3));
 });
 
+describe("layoutWaterfall — multi-series steps", () => {
+  function multi(): ChartModel {
+    const m = model();
+    m.data.categories = ["Q1", "Q2"];
+    m.data.series = [
+      { name: "A", color: "#111111", values: [6, 4] },
+      { name: "B", color: "#222222", values: [4, -1] },
+    ];
+    return m;
+  }
+  const p = layoutWaterfall(multi());
+  const bars = p.filter((s): s is RectPrimitive => s.kind === "rect" && s.meta?.objectType === "segment");
+
+  it("stacks each series as its own sub-segment within a step", () => {
+    expect(bars.length).toBe(4); // 2 steps × 2 series
+  });
+
+  it("colours sub-segments by series (not rise/fall)", () => {
+    expect(bars.some((r) => r.fill === "#111111")).toBe(true);
+    expect(bars.some((r) => r.fill === "#222222")).toBe(true);
+  });
+
+  it("still connects the two steps once", () => {
+    expect(p.filter((s) => s.kind === "line" && s.meta?.objectType === "connector").length).toBe(1);
+  });
+});
+
 describe("layoutWaterfall — 'e' total column", () => {
   function withTotal(): ChartModel {
     const m = model();

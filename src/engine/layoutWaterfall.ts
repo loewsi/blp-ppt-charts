@@ -30,20 +30,35 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
   const series0 = data.series[0];
   if (n === 0 || !series0) return prims;
 
-  const deltas = data.categories.map((_, i) => safe(series0.values[i]));
+  const nSer = data.series.length;
+  const single = nSer === 1;
   const isTotal = (i: number) => data.totalFlags?.[i] ?? false;
-  const riseColor = series0.color;
+  const riseColor = series0.color; // single-series rise/fall coloring
   const fallColor = data.series[1]?.color ?? DEFAULT_FALL;
 
-  // Running totals. A normal column adds its delta; an "e" total column shows the
-  // running sum (a bar from the baseline) and leaves the flow unchanged.
+  // Each step's delta is the SUM of its series; within the step the series stack
+  // as sub-segments. subPos[i] holds the running sub-positions [before … after].
+  // An "e" total column shows the running sum from the baseline and doesn't flow.
   const before: number[] = [];
   const after: number[] = [];
+  const subPos: number[][] = [];
   let cum = 0;
   for (let i = 0; i < n; i++) {
     before.push(cum);
-    if (!isTotal(i)) cum += deltas[i];
-    after.push(cum);
+    if (isTotal(i)) {
+      subPos.push([]);
+      after.push(cum);
+    } else {
+      const ps = [cum];
+      let c = cum;
+      for (let s = 0; s < nSer; s++) {
+        c += safe(data.series[s].values[i]);
+        ps.push(c);
+      }
+      cum = c;
+      subPos.push(ps);
+      after.push(cum);
+    }
   }
 
   const plotLeft = box.left + PAD_SIDE;
@@ -51,8 +66,10 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
   const plotW = Math.max(24, box.width - PAD_SIDE * 2);
   const plotH = Math.max(24, box.height - PAD_TOP - PAD_BOTTOM);
 
-  const hi = Math.max(0, ...before, ...after);
-  const lo = Math.min(0, ...before, ...after);
+  // Range spans every sub-position (so mixed-sign steps that overshoot still fit).
+  const allV = [0, ...before, ...after, ...subPos.flat()];
+  const hi = Math.max(...allV);
+  const lo = Math.min(...allV);
   const range = hi - lo || 1;
   const scale = plotH / range;
   const yFor = (v: number) => plotTop + (hi - v) * scale;
@@ -61,34 +78,42 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
   const gap = opt.gap;
   const barW = slot * (1 - gap);
 
-  for (let i = 0; i < n; i++) {
-    const x = plotLeft + i * slot + (slot - barW) / 2;
-    const total = isTotal(i);
-    // A total column spans baseline→running sum; a delta column floats before→after.
-    const top = total ? Math.max(0, after[i]) : Math.max(before[i], after[i]);
-    const bot = total ? Math.min(0, after[i]) : Math.min(before[i], after[i]);
-    const yTop = yFor(top);
-    const h = Math.max(0, yFor(bot) - yTop);
-    const fill = total ? TOTAL_COLOR : deltas[i] >= 0 ? riseColor : fallColor;
-    prims.push({ kind: "rect", x, y: yTop, w: barW, h, fill, meta: { objectType: "segment", seriesIndex: 0, categoryIndex: i } });
-
-    // Total columns show the running sum; delta columns show the signed change.
-    if (opt.showValueLabels) {
-      const text = total ? formatNumber(after[i], { ...nf, hideZero: false }) : signed(deltas[i], nf);
+  // Draw one sub-segment rect + its label.
+  function drawSeg(x: number, a: number, b: number, fill: string, text: string, si: number, ci: number) {
+    const yTop = yFor(Math.max(a, b));
+    const h = Math.max(0, yFor(Math.min(a, b)) - yTop);
+    prims.push({ kind: "rect", x, y: yTop, w: barW, h, fill, meta: { objectType: "segment", seriesIndex: si, categoryIndex: ci } });
+    if (opt.showValueLabels && text) {
       const cx = x + barW / 2;
       const lw = estTextW(text, opt.segmentFontSize);
-      const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: 0, categoryIndex: i };
+      const m: ShapeMeta = { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci };
       if (h >= MIN_BAR_FOR_LABEL) {
         prims.push({ kind: "text", x: cx - lw / 2, y: yTop + h / 2 - 7, w: lw, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: m });
       } else {
         prims.push({ kind: "text", x: cx - lw / 2, y: yTop - 16, w: lw, h: 14, text, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: m });
       }
     }
+  }
+
+  for (let i = 0; i < n; i++) {
+    const x = plotLeft + i * slot + (slot - barW) / 2;
+    if (isTotal(i)) {
+      // "e" column: a single bar from the baseline to the running sum.
+      drawSeg(x, 0, after[i], TOTAL_COLOR, formatNumber(after[i], { ...nf, hideZero: false }), 0, i);
+    } else {
+      const ps = subPos[i];
+      for (let s = 0; s < nSer; s++) {
+        const val = safe(data.series[s].values[i]);
+        if (val === 0) continue;
+        const fill = single ? (val >= 0 ? riseColor : fallColor) : data.series[s].color;
+        drawSeg(x, ps[s], ps[s + 1], fill, signed(val, nf), s, i);
+      }
+    }
 
     // Category label under the baseline.
     prims.push({ kind: "text", x: plotLeft + i * slot, y: plotTop + plotH + 3, w: slot, h: 16, text: data.categories[i], color: LABEL_DARK, size: 9, bold: false, align: "center", family: fam, meta: { objectType: "categoryLabel", categoryIndex: i } });
 
-    // Connector from this bar's end level to the next bar's start.
+    // Connector from this step's end level to the next step's start.
     if (i < n - 1) {
       const y = yFor(after[i]);
       const xEnd = x + barW;
