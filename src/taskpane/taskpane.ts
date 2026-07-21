@@ -263,19 +263,19 @@ function wire(): void {
       scheduleApply();
     })
   );
-  byId("chartType").addEventListener("change", () => maybeNameScatterRows());
+  byId("chartType").addEventListener("change", () => maybeNameScatterCols());
 }
 
-/** When switching to scatter, name the first rows X / Y / Size so the mapping is clear
- *  (only if they still have default names). */
-function maybeNameScatterRows(): void {
+/** When switching to scatter, name the first COLUMNS X / Y / Size / Group so the
+ *  mapping is clear (rows are the points). Only touches default-looking names. */
+function maybeNameScatterCols(): void {
   if (readChartType() !== "scatter") return;
   currentData = readGrid();
-  const names = ["X", "Y", "Size"];
+  const names = ["X", "Y", "Size", "Group"];
   let changed = false;
-  currentData.series.forEach((s, i) => {
-    if (i < 3 && /^(Product |Series |S\d|Cat )/i.test(s.name)) {
-      s.name = names[i];
+  currentData.categories.forEach((c, i) => {
+    if (i < 4 && /^(Q\d|Cat|Category)/i.test(c.trim())) {
+      currentData.categories[i] = names[i];
       changed = true;
     }
   });
@@ -360,7 +360,7 @@ function refreshVisibility(): void {
   // Data-entry hint per chart type.
   const hints: Partial<Record<typeof type, string>> = {
     waterfall: "Tip: type “e” in a value cell to make it a computed total / subtotal column.",
-    scatter: "Rows: 1st = X, 2nd = Y, 3rd = bubble size (optional). Each column is a point.",
+    scatter: "Each row is a point. Columns: 1 = X, 2 = Y, 3 = Size (bubble, optional), 4 = Group (color, optional).",
     pie: "The first series becomes the slices; each category is one slice.",
     mekko: "Column width = the category total; each column is 100%-stacked by series.",
   };

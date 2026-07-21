@@ -1,5 +1,5 @@
 import type { ChartModel } from "../model/chartModel";
-import { DEFAULT_OPTIONS } from "../model/chartModel";
+import { DEFAULT_OPTIONS, PALETTES } from "../model/chartModel";
 import type { Primitive } from "./primitives";
 import { formatNumber } from "./format";
 import { axisTicks } from "./layoutBarColumn";
@@ -12,21 +12,33 @@ const Y_BAND = 34; // room for y-axis tick labels (left)
 const X_BAND = 18; // room for x-axis tick labels (bottom)
 
 /**
- * Scatter / bubble. Grid convention: series row 1 = X, row 2 = Y, optional row 3 =
- * bubble size; each category (column) is one point, its name the point label.
+ * Scatter / bubble (think-cell style). Grid convention: each ROW is a point; the
+ * columns are X, Y, Size (bubble, optional), Group (color, optional). A point's
+ * row name is its label; its color comes from its Group (if given) or its swatch.
  */
 export function layoutScatter(model: ChartModel): Primitive[] {
   const opt = model.options ?? DEFAULT_OPTIONS;
   const nf = opt.numberFormat;
   const { data, box } = model;
   const prims: Primitive[] = [];
-  if (data.series.length < 2 || data.categories.length === 0) return prims; // need X and Y
+  const points = data.series; // each row/series is one point
+  if (points.length === 0 || data.categories.length < 2) return prims; // need at least X + Y columns
 
-  const xs = data.categories.map((_, i) => safe(data.series[0].values[i]));
-  const ys = data.categories.map((_, i) => safe(data.series[1].values[i]));
-  const sizes = data.series[2] ? data.categories.map((_, i) => Math.max(0, safe(data.series[2].values[i]))) : null;
-  const color = data.series[0].color;
+  const hasSize = data.categories.length >= 3;
+  const hasGroup = data.categories.length >= 4;
+  const xs = points.map((p) => safe(p.values[0]));
+  const ys = points.map((p) => safe(p.values[1]));
+  const sizes = hasSize ? points.map((p) => Math.max(0, safe(p.values[2]))) : null;
   const fam = opt.fontFamily;
+
+  // Color: by Group when a Group column is present (points sharing a group share a
+  // color), else each point's own swatch color.
+  const palette = PALETTES.blue;
+  const groupColorFor = (i: number): string => {
+    if (!hasGroup) return points[i].color;
+    const g = safe(points[i].values[3]);
+    return palette[(Math.round(g) % palette.length + palette.length) % palette.length];
+  };
 
   const plotLeft = box.left + PAD + Y_BAND;
   const plotTop = box.top + PAD;
@@ -82,14 +94,14 @@ export function layoutScatter(model: ChartModel): Primitive[] {
 
   // Points (bubbles sized by area ∝ size).
   const maxSize = sizes ? Math.max(1, ...sizes) : 1;
-  data.categories.forEach((cat, i) => {
+  points.forEach((p, i) => {
     const cx = xPix(xs[i]);
     const cy = yPix(ys[i]);
-    const r = sizes ? 4 + 14 * Math.sqrt(sizes[i] / maxSize) : 4.5;
-    prims.push({ kind: "ellipse", x: cx - r, y: cy - r, w: r * 2, h: r * 2, fill: color, meta: { objectType: "point", categoryIndex: i } });
-    if (opt.showValueLabels && cat) {
-      const w = estTextW(cat, opt.segmentFontSize);
-      prims.push({ kind: "text", x: cx + r + 2, y: cy - 7, w, h: 14, text: cat, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "left", family: fam, meta: { objectType: "point", categoryIndex: i } });
+    const r = sizes ? 5 + 16 * Math.sqrt(sizes[i] / maxSize) : 4.5;
+    prims.push({ kind: "ellipse", x: cx - r, y: cy - r, w: r * 2, h: r * 2, fill: groupColorFor(i), meta: { objectType: "point", seriesIndex: i } });
+    if (opt.showValueLabels && p.name) {
+      const w = estTextW(p.name, opt.segmentFontSize);
+      prims.push({ kind: "text", x: cx + r + 2, y: cy - 7, w, h: 14, text: p.name, color: LABEL_DARK, size: opt.segmentFontSize, bold: false, align: "left", family: fam, meta: { objectType: "point", seriesIndex: i } });
     }
   });
 
