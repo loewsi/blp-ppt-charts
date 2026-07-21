@@ -215,7 +215,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   // Place a category's small "inside" chips: any run of overlapping labels is
   // spread to alternating sides (the one nearest the axis moves too); isolated
   // labels stay centered.
-  function resolveChips(list: Chip[]) {
+  // avoidC = position (along the value axis) of the total label, so a top chip
+  // that would collide with the total is nudged aside too.
+  function resolveChips(list: Chip[], avoidC?: number) {
     list.sort((a, b) => a.c - b.c);
     let i = 0;
     while (i < list.length) {
@@ -225,7 +227,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
         const it = list[k];
         let cx = it.cx;
         let cy = it.cy;
-        if (j > i) {
+        const nearTotal = avoidC != null && Math.abs(it.c - avoidC) < labelH;
+        if (j > i || nearTotal) {
           const dir = (k - i) % 2 === 0 ? 1 : -1;
           if (isColumn) cx += dir * (estTextW(it.text, opt.segmentFontSize) / 2 + 3);
           else cy += dir * (labelH * 0.7);
@@ -329,6 +332,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     const slotStart = k * slot + (slot - catThick) / 2;
     const total = totals[ci] || 0;
     const chips: Chip[] = []; // small "inside" labels, positioned after the stack is known
+    let stackTop = 0; // running positive total (for the total-label collision guard)
 
     if (stacked) {
       let cumPos = 0;
@@ -382,10 +386,10 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
           }
         }
       }
+      stackTop = norm100 ? (total === 0 ? 0 : 1) : Math.max(cumPos, 0);
       if (opt.showTotals) {
         const text = formatNumber(total, nf); // absolute total, shown even on 100% stacked
-        const topPos = norm100 ? (total === 0 ? 0 : 1) : Math.max(cumPos, 0);
-        if (text) pushTotal(slotStart, catThick, topPos, text, { objectType: "totalLabel", categoryIndex: ci });
+        if (text) pushTotal(slotStart, catThick, stackTop, text, { objectType: "totalLabel", categoryIndex: ci });
       }
     } else {
       const laneThick = catThick / Math.max(1, nBar);
@@ -409,7 +413,9 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       }
     }
 
-    resolveChips(chips);
+    // Guard top chips against the total label (column only; totals sit above the stack).
+    const avoidC = stacked && opt.showTotals && isColumn ? yv(stackTop) - 12 : undefined;
+    resolveChips(chips, avoidC);
     pushCategoryLabel(slotStart, catThick, data.categories[ci], { objectType: "categoryLabel", categoryIndex: ci });
   }
 
