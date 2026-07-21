@@ -216,7 +216,8 @@ const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
-  "optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax", "optReverseSeries", "optRefColor", "optPieHole",
+  "optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax", "optReverseSeries", "optRefColor",
+  "optPieHole", "optScatterQuadrant",
   "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
   "labelOverflow",
@@ -267,8 +268,13 @@ function refreshVisibility(): void {
   // Line/combination-only.
   ["optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax"].forEach((id) => showLabel(id, hasLine));
 
-  // Pie-only.
+  // Pie-only / scatter-only.
   showLabel("optPieHole", isPie);
+  showLabel("optScatterQuadrant", type === "scatter");
+  // Scatter uses value labels + gridlines/axis; hide the rest of the bar controls there.
+  if (type === "scatter") {
+    ["optGridlines", "optAxis"].forEach((id) => showLabel(id, true));
+  }
 
   // Reference-line color only once a reference value is set.
   const refSet = (byId("optRefValue") as HTMLInputElement).value.trim() !== "";
@@ -611,6 +617,7 @@ function readOptions(): ChartOptions {
     lineAxisMin: numOrNull("optLineAxisMin"),
     lineAxisMax: numOrNull("optLineAxisMax"),
     pieHole: Math.min(0.9, Math.max(0, (Number(v("optPieHole")) || 0) / 100)),
+    scatterQuadrant: c("optScatterQuadrant"),
     showConnectors: c("optConnectors"),
     reverseSeries: c("optReverseSeries"),
     referenceColor: v("optRefColor") || "#E8412C",
@@ -665,6 +672,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optReverseSeries") as HTMLInputElement).checked = o.reverseSeries;
   (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";
   (byId("optPieHole") as HTMLInputElement).value = String(Math.round((o.pieHole || 0) * 100));
+  (byId("optScatterQuadrant") as HTMLInputElement).checked = o.scatterQuadrant;
   (byId("optDiffArrow") as HTMLSelectElement).value = o.diffArrow;
   (byId("optDiffPercent") as HTMLInputElement).checked = o.diffPercent;
   (byId("optDiffFrom") as HTMLInputElement).value = String(o.diffFrom + 1);

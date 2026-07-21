@@ -65,6 +65,7 @@ export interface ChartOptions {
   lineAxisMin: number | null; // fix the secondary (line) axis minimum (null = auto)
   lineAxisMax: number | null; // fix the secondary (line) axis maximum (null = auto)
   pieHole: number; // doughnut hole as a fraction of the radius (0 = full pie)
+  scatterQuadrant: boolean; // scatter/bubble: draw dividing quadrant lines
   referenceValue: number | null; // horizontal reference/target line at this value (null = off)
   referenceColor: string; // color of the reference line + its label
   // Difference arrow between two categories: "total" compares column totals,
@@ -176,6 +177,7 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   lineAxisMin: null,
   lineAxisMax: null,
   pieHole: 0,
+  scatterQuadrant: false,
   referenceValue: null,
   referenceColor: "#E8412C",
   diffArrow: "off",

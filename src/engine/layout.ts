@@ -3,6 +3,7 @@ import type { Primitive } from "./primitives";
 import { layoutBarColumn } from "./layoutBarColumn";
 import { layoutLine } from "./layoutLine";
 import { layoutPie } from "./layoutPie";
+import { layoutScatter } from "./layoutScatter";
 import { layoutWaterfall } from "./layoutWaterfall";
 
 type LayoutFn = (model: ChartModel) => Primitive[];
@@ -13,7 +14,7 @@ const REGISTRY: Record<ChartType, LayoutFn> = {
   combination: layoutBarColumn, // combination = bars + per-series line kinds (D8)
   waterfall: layoutWaterfall,
   pie: layoutPie,
-  scatter: layoutBarColumn, // TODO D10: layoutScatter
+  scatter: layoutScatter,
   mekko: layoutBarColumn, // TODO D11: layoutMekko
 };
 
