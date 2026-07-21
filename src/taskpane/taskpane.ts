@@ -4,6 +4,7 @@ import type {
   ChartBox,
   ChartOptions,
   ChartType,
+  ChartSheet,
   Orientation,
   Grouping,
 } from "../model/chartModel";
@@ -64,6 +65,64 @@ function scheduleApply(): void {
   applyTimer = setTimeout(() => void guard(updateChart), 400);
 }
 
+// ---- in-pane undo/redo ---------------------------------------------------
+// Native PowerPoint undo can't revert our delete-and-recreate redraws, so the
+// pane keeps its own history of the editable state (sheet + options + type).
+interface Snapshot {
+  sheet: ChartSheet;
+  options: ChartOptions;
+  type: ChartType;
+  name: string;
+}
+let history: Snapshot[] = [];
+let histPos = -1;
+let restoring = false;
+
+function captureSnapshot(): Snapshot {
+  return { sheet: getSheet(), options: readOptions(), type: readChartType(), name: currentName };
+}
+function resetHistory(): void {
+  history = currentId ? [captureSnapshot()] : [];
+  histPos = history.length - 1;
+}
+function recordHistory(): void {
+  if (restoring || !currentId) return;
+  const snap = captureSnapshot();
+  if (histPos >= 0 && JSON.stringify(history[histPos]) === JSON.stringify(snap)) return;
+  history = history.slice(0, histPos + 1);
+  history.push(snap);
+  if (history.length > 100) history.shift();
+  histPos = history.length - 1;
+}
+async function restoreSnapshot(snap: Snapshot): Promise<void> {
+  restoring = true;
+  try {
+    (byId("chartType") as HTMLSelectElement).value = snap.type;
+    setOptionsUI(snap.options);
+    setSheet(snap.sheet);
+    currentData = getGridData();
+    renderSeriesColors();
+    refreshVisibility();
+    await updateChart();
+  } finally {
+    restoring = false;
+  }
+}
+function undo(): void {
+  if (histPos > 0) {
+    histPos--;
+    void guard(() => restoreSnapshot(history[histPos]));
+    status("Undo.");
+  }
+}
+function redo(): void {
+  if (histPos < history.length - 1) {
+    histPos++;
+    void guard(() => restoreSnapshot(history[histPos]));
+    status("Redo.");
+  }
+}
+
 // ---- boot ----------------------------------------------------------------
 Office.onReady((info) => {
   if (info.host !== Office.HostType.PowerPoint) {
@@ -76,6 +135,21 @@ Office.onReady((info) => {
     currentData = getGridData();
     renderSeriesColors();
     scheduleApply();
+  });
+  // In-pane undo/redo (Ctrl/Cmd+Z, Ctrl+Y or Ctrl+Shift+Z). Skipped while a grid
+  // cell is in edit mode so the input's own text undo still works.
+  document.addEventListener("keydown", (e) => {
+    const ae = document.activeElement as HTMLInputElement | null;
+    if (ae && ae.tagName === "INPUT" && !ae.readOnly) return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === "z" && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    } else if (k === "y" || (k === "z" && e.shiftKey)) {
+      e.preventDefault();
+      redo();
+    }
   });
   setOptionsUI(defaultOptions());
   renderGrid();
@@ -528,6 +602,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
   currentData = data;
   currentBox = box;
   setMode();
+  resetHistory(); // start a fresh undo history for the new chart
   status(`Inserted ${currentName}. Edit anything — it updates live.`);
 }
 
@@ -570,6 +645,7 @@ async function updateChart(): Promise<void> {
     busy = false;
   }
   currentData = data;
+  recordHistory(); // capture this state for undo (no-op while restoring)
 }
 
 
@@ -587,6 +663,7 @@ function applyModel(model: ChartModel): void {
   renderSeriesColors();
   setMode();
   refreshVisibility();
+  resetHistory(); // undo history starts from the loaded state
 }
 
 function readChartType(): ChartType {
