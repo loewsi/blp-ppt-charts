@@ -62,6 +62,8 @@ export interface ChartOptions {
   reverseSeries: boolean; // reverse the series stacking / cluster order
   showAxisLine: boolean; // draw the value-axis line (y-axis for columns)
   lineSecondaryAxis: boolean; // scale line series on their own right-hand axis
+  lineAxisMin: number | null; // fix the secondary (line) axis minimum (null = auto)
+  lineAxisMax: number | null; // fix the secondary (line) axis maximum (null = auto)
   pieHole: number; // doughnut hole as a fraction of the radius (0 = full pie)
   referenceValue: number | null; // horizontal reference/target line at this value (null = off)
   referenceColor: string; // color of the reference line + its label
@@ -171,6 +173,8 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   reverseSeries: false,
   showAxisLine: false,
   lineSecondaryAxis: false,
+  lineAxisMin: null,
+  lineAxisMax: null,
   pieHole: 0,
   referenceValue: null,
   referenceColor: "#E8412C",

@@ -215,7 +215,7 @@ const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
-  "optLineSecondaryAxis", "optReverseSeries", "optRefColor", "optPieHole",
+  "optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax", "optReverseSeries", "optRefColor", "optPieHole",
   "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
   "labelOverflow",
@@ -557,6 +557,8 @@ function readOptions(): ChartOptions {
     showValueAxis: c("optAxis"),
     showAxisLine: c("optAxisLine"),
     lineSecondaryAxis: c("optLineSecondaryAxis"),
+    lineAxisMin: numOrNull("optLineAxisMin"),
+    lineAxisMax: numOrNull("optLineAxisMax"),
     pieHole: Math.min(0.9, Math.max(0, (Number(v("optPieHole")) || 0) / 100)),
     showConnectors: c("optConnectors"),
     reverseSeries: c("optReverseSeries"),
@@ -606,6 +608,8 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optAxis") as HTMLInputElement).checked = o.showValueAxis;
   (byId("optAxisLine") as HTMLInputElement).checked = o.showAxisLine;
   (byId("optLineSecondaryAxis") as HTMLInputElement).checked = o.lineSecondaryAxis;
+  (byId("optLineAxisMin") as HTMLInputElement).value = o.lineAxisMin == null ? "" : String(o.lineAxisMin);
+  (byId("optLineAxisMax") as HTMLInputElement).value = o.lineAxisMax == null ? "" : String(o.lineAxisMax);
   (byId("optConnectors") as HTMLInputElement).checked = o.showConnectors;
   (byId("optReverseSeries") as HTMLInputElement).checked = o.reverseSeries;
   (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";

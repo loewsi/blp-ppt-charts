@@ -147,6 +147,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       lMax = 1;
     }
     lMin = Math.min(0, lMin);
+    if (opt.lineAxisMax != null && isFinite(opt.lineAxisMax)) lMax = opt.lineAxisMax;
+    if (opt.lineAxisMin != null && isFinite(opt.lineAxisMin)) lMin = opt.lineAxisMin;
     if (lMax <= lMin) lMax = lMin + 1;
   }
   // Manual axis overrides (auto scale unless the user fixes an end). Not for 100%.
@@ -434,9 +436,13 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   }
 
   // Value-axis line (the "y-axis" for columns; the horizontal scale line for bars).
+  // With a secondary axis, draw a line on both the left and right.
   if (opt.showAxisLine) {
     if (isColumn) {
       prims.push({ kind: "line", x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
+      if (useSecondary) {
+        prims.push({ kind: "line", x1: plotLeft + plotW, y1: plotTop, x2: plotLeft + plotW, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
+      }
     } else {
       prims.push({ kind: "line", x1: plotLeft, y1: plotTop + plotH, x2: plotLeft + plotW, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
     }
