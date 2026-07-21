@@ -1,141 +1,89 @@
-# SlideChart — PowerPoint testing checklist
+# SlideChart — testing & feedback log
 
-Everything below is **built + unit-tested** but **not yet visually confirmed in PowerPoint**
-(Claude renders blind). Walk this list in PowerPoint and mark each ✅ / ✍️ (notes). Then I flip
-the corresponding 🔵 → ✅ in [FEATURES.md](FEATURES.md).
+**How this works.** Two parts:
+- **Part A — Needs your test:** built but not yet confirmed in PowerPoint (Claude renders blind). Tick `[x]` as you go.
+- **Part B — Tested & your feedback:** what you've confirmed, plus your notes. Your feedback here is the
+  input for my next changes and for [FEATURES.md](FEATURES.md). When an A-item passes, it moves to B.
 
-**Setup once per code change:** close PowerPoint → clear the webview cache
+**Setup after a code change:** close PowerPoint → clear the webview cache
 `%LOCALAPPDATA%\Microsoft\Office\16.0\Wef` → reopen. The add-in loads from the GitHub Pages URL.
+Last updated: **2026-07-21 pm**.
 
 ---
 
-## ⭐ Re-verify first — fixed from your 2026-07-20 feedback
-- [ ] **Typing a value now updates the chart** (no transpose needed) — commit with Enter/Tab or click away.
-- [ ] **Click blank area** → pane resets to "No chart selected".
-- [ ] **− Series / − Category** now removes the row/column your cursor is in (not the last).
-- [ ] **Ctrl+Space** selects the column without opening a menu (may still hit an OS language shortcut — tell me if so).
-- [ ] **100% stacked** now shows the **absolute** total on top.
-- [ ] **Reverse series** checkbox (separate from Reverse categories).
-- [ ] **Legend position** switching works directly now (no need to remove + re-add); a manually-dragged legend still stays put until you pick a new position.
-- [ ] **Axis line** checkbox draws the y-axis (column) / value-scale line (bar).
-- [ ] **Reference color** picker next to Reference line.
-- [ ] **Number magnitude** (÷1,000 / ÷1,000,000) no longer appends a "k"/"M" — add your own suffix.
-- [ ] **Separators** dropdown: pick `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / System.
-- [ ] **Hide zeros** toggle is respected (off → a `0` shows at the baseline; on → hidden).
-- [ ] **Large value labels** that are wider than the bar now get a colored chip (no more white-on-white).
-- [ ] **Overlapping small labels** now spread to both sides — including the one nearest the axis.
-- [ ] **Colors:** scheme renamed **Blue** (was "BLP"), with more shades.
+# Part A — Needs your test 🔲
 
----
-
-## ⭐⭐⭐ Latest (2026-07-21 pm) — feedback fixes + all remaining chart types
-
-**Your feedback fixes**
-- [ ] `+ Series` inserts **below** the cursor's row; `+ Category` **left** of its column.
-- [ ] Number **Magnitude** now reads ×10⁻³ / ×10⁻⁶ / ×10³ etc. (no k/M letter); **Group thousands** on by default.
+## A1. Fixes from your last feedback — please re-verify
+- [ ] `+ Series` / `+ Category` now insert **at the cursor** (below the row / left of the column), not at the end.
+- [ ] Number **Magnitude** reads **×10⁻³ / ×10⁻⁶ / ×10³** etc. (no k/M letter); **Group thousands** on by default.
 - [ ] A `0` value's label sits **in stack order**, not pinned to the axis.
-- [ ] More color schemes: **Green / Red / Orange / Multi-color**.
-- [ ] Pasted chart gets the **next free "Chart N"** name; deleting a chart also removes its **orphan legend**.
-- [ ] **Difference arrow**: "Position" field places it at a chosen slot boundary (blank = auto).
-- [ ] **CAGR** now shows as a **horizontal arrow above the chart** with a white % bubble.
-- [ ] Guide lines are **real dashed connectors**.
-- [ ] **Secondary axis**: Line axis min/max fields; axis line on **both sides** when active.
-- [ ] **Doughnut** should look **round** now (denser facets) — please confirm.
-- [ ] Panel shows **only relevant options** (no CAGR fields unless CAGR on, no doughnut hole unless pie, etc.).
-- [ ] **Legend**: changing position no longer makes the graph jump (legend sits outside the plot).
-      ⚠️ Still open: turning on **axis labels** shrinks the plot (plot-anchored box model pending).
+- [ ] New color schemes **Green / Red / Orange / Multi-color**; **Auto-shades from base** ramps one color across series.
+- [ ] Pasted chart gets the **next free "Chart N"** name; deleting a chart also clears its **orphan legend**.
+- [ ] **Difference arrow**: the **Position** field places it at a chosen slot boundary (blank = auto).
+- [ ] **CAGR**: now a **horizontal arrow above the chart** with a white % bubble (not a vertical span).
+- [ ] **Secondary axis**: **Line axis min/max** fields; axis line on **both sides** when active.
+- [ ] Panel shows **only relevant options** per chart type (no CAGR fields unless CAGR on, no doughnut hole unless pie…).
+- [ ] **Legend**: repositioning it no longer makes the graph jump (legend now sits outside the plot).
+- [ ] Labels: **Outside** moves *all* value labels out; wide labels get a colored chip; overlapping small labels spread both ways.
 
-**New chart types** (Chart dropdown)
-- [ ] **Scatter / bubble**: rows = X, Y, optional Size; each column a point; "Quadrant lines" toggle. (Hint shows in pane.)
-- [ ] **Mekko**: column width ∝ category total; 100%-stacked; % + column totals.
-- [ ] **Waterfall**: type **"e"** in a value cell → a computed total column to the baseline. (Hint shows in pane.)
+## A2. Brand-new — never rendered
+- [ ] **Line** chart → all series as connected lines with markers + labels.
+- [ ] **Scatter / bubble** → rows = X, Y, optional Size; each column a point; **Quadrant lines** toggle. (Pane shows a hint.)
+- [ ] **Mekko** → column width ∝ category total; 100%-stacked; % + column totals.
+- [ ] **Waterfall** → type **"e"** in a value cell → a computed total column from the baseline to the running sum.
+- [ ] **Pie / doughnut** → slices from the first series; % inside, category outside; **Doughnut hole %** > 0 → ring with the total. (Was "not round" — denser facets now; confirm.)
+- [ ] **Agenda** (bottom of pane) → list chapters → *Create / update agenda slide*; run again → updates the same slide.
 
-**Agenda** (bottom of pane)
-- [ ] Type chapters (one per line) → **Create / update agenda slide** adds a numbered "Agenda" slide;
-      run it again → updates the same slide in place.
-
-**Colors**
-- [ ] **Auto-shades from base**: pick a base color → series become a light→dark ramp of it.
+## A3. Known-open — don't test (not built)
+Axis labels shrink the plot (#8) · sync-axis across charts · per-segment color override ·
+waterfall connector-controlled totals · line area fill · standard slide elements. See [FEATURES.md](FEATURES.md).
 
 ---
 
-## ⭐⭐ Overnight (2026-07-21 am) — brand-new, test with fresh eyes
-These are freshly built and **never seen rendered**. Expect rough edges; note anything off.
+# Part B — Tested & confirmed ✅ (+ your feedback)
 
-**Bug fixes**
-- [ ] **Same-slide copy-paste** now yields an independently editable copy (select the copy → edits only affect it).
+Legend: **✅** you confirmed it works · **✎** your feedback → what I did (→ **fixed**, re-verify in A · → **open** · → **future**).
 
-**Arrows** (Chart style → Arrows section)
-- [ ] **Difference arrow**: set "Between totals", From cat 1, To cat 2 → double-headed arrow with signed delta (e.g. `+20`); tick "Show %" → `+20 (+50%)`. Try "Between a series" + a series #.
-- [ ] Arrows have real **triangular heads** (not plain lines).
-- [ ] **CAGR arrow**: set "Of totals", From/To, Periods (or leave 0 = auto) → label like `CAGR +12.5%`.
+## Core & lifecycle
+- ✅ Insert · blank-click deselect · click-to-load · live cell edit · move (no reload) · resize · shrink stays visible · save/reopen · same-slide copy-paste gives an independent copy.
 
-**Combination**
-- [ ] In the Colors list, tick **line** next to a series → that series draws as a line + markers over the bars.
-- [ ] Chart type **Combination** in the dropdown.
-- [ ] **Line 2nd axis** checkbox → line series scale on their own right-hand axis (turn on Axis labels to see right-side ticks).
+## Data grid
+- ✅ Edit categories/series/values · arrow-nav · Excel paste · transpose · remove series/category · Shift+Space.
+- ✎ `− Series`/`− Category` removed the *last*, not the cursor's → **fixed**. `+` appended at the end → **fixed** (re-verify A1).
+- ✎ **Ctrl+Space** opens an OS menu → **open** (Windows OS shortcut; can't be intercepted from the pane).
 
-**New chart types** (Chart dropdown)
-- [ ] **Line** → all series as connected lines with markers + labels.
-- [ ] **Pie / doughnut** → slices sized by the first series; % inside, category outside. Set **Doughnut hole %** > 0 → ring with the total in the middle. ⚠️ Slices are a facet fan — check they look round.
+## Chart styles
+- ✅ Orientation column/bar · arrangements · gap · totals · value labels · reverse categories · reverse series · gridlines · value axis · connectors · reference line · reference color · axis min/max.
+- ✎ 100% stacked should show the absolute total → **fixed** (✅). Reverse only affected categories → **fixed** (reverse series added, ✅).
+- ✎ Legend positions worked but the **graph jumped** when switching → **fixed** (legend drawn outside the plot; re-verify A1).
+- ✎ Turning on **axis labels resizes the graph** → **open** (#8, plot-anchored box model).
 
----
+## Negatives
+- ✅ Bars extend below the baseline; axis spans below zero.
 
-> `[x]` = confirmed by Silvan in PowerPoint. `[ ]` = still to verify (new or changed since last check).
+## Number format
+- ✅ Decimals · prefix/suffix · group thousands · hide-zero · negatives ( ) · plus sign.
+- ✎ Don't append a k/M letter for scale — want a magnitude like ×10⁻³ → **fixed** (re-verify A1). Set group-thousands on by default → **done**. Hidden-zero label was pinned to the axis → **fixed** (stack order; re-verify A1).
 
-## 1. Core lifecycle
-- [x] **Insert** a chart → default stacked column appears.
-- [x] Click a **blank area** → pane says "No chart selected".
-- [x] Click the **chart** → its data + options load back into the pane.
-- [x] Edit a **cell** → chart updates automatically (no Update button), ~0.4s later.
-- [x] **Move** the chart → it does *not* reload/flicker.
-- [x] **Resize** the chart → it re-lays-out once you release (labels/axis reflow).
-- [x] Shrink it **very small** → chart stays visible (doesn't disappear).
-- [x] **Copy-paste** the chart → the copy is independently editable.
-- [x] Save, close, reopen the .pptx → chart still editable (data survived in the file).
+## Colors
+- ✅ Per-series swatch · Blue scheme.
+- ✎ Call it "Blue" not "BLP" → **done**. Want more colors + a master-based picker + auto-generated shades → **partly done** (Green/Red/Orange/Multi + Auto-shades added, re-verify A1; per-series master-scheme picker still **open**).
 
-## 2. Data grid
-- [x] Type in categories (top row) and series names (left column).
-- [x] Arrow-key navigation; Enter/Tab commit.
-- [x] **Paste** a block from Excel → grid fills.
-- [x] `− Series` / `− Category` / **Transpose** · [ ] `+ Series`/`+ Category` now insert at the cursor.
-- [x] Range-select with mouse and **Shift+arrows**; **Shift+Space**.
-- [ ] **Ctrl+Space** — likely captured by a Windows OS shortcut (report if it still opens a menu).
+## Fonts
+- ✅ Font family; independent segment/total sizes.
 
-## 3. Chart styles (Chart style panel)
-- [x] Orientation **Column ↔ Bar**.
-- [x] Arrangement **Stacked / Clustered / 100% stacked** (100% shows the absolute total).
-- [x] **Gap %** widens/narrows bars.
-- [x] **Totals**, **Value labels**, **Reverse categories**, **Reverse series** toggles.
-- [x] **Legend** positions work · [ ] re-verify: moving the legend no longer makes the graph jump.
-- [x] **Gridlines** and **Value axis** toggles · ⚠️ axis labels still shrink the plot (#8, open).
-- [x] **Connectors** (stacked column only) draw between adjacent stacks.
-- [x] **Reference line** at a value · [x] **Reference color** · [x] **Axis min / max**.
+## Combination & line
+- ✅ Combination works (mark a series as a line); secondary axis works; line chart works (lightly tested).
+- ✎ Want to set the **secondary-axis scale** + axis lines on both sides → **fixed** (re-verify A1).
 
-## 4. Negative values
-- [x] Enter negative numbers → bars extend **below** the zero baseline; axis spans below zero.
+## Arrows
+- ✅ Difference arrow works.
+- ✎ Want to **choose where the difference arrow sits** → **fixed** (Position field, re-verify A1). **CAGR** should sit **above the chart** with a % bubble → **fixed** (re-verify A1). Arrowheads look hand-made / seams show → **partly**: guides are now real dashed connectors, but heads stay custom triangles (Office.js has no PowerPoint arrowhead API).
 
-## 5. Labels
-- [x] Small segments keep their label **inside** as a color chip (Silvan: works, but not everywhere).
-- [ ] Switch to **Outside** → ALL value labels sit outside, no chip.
-- [ ] Wide labels get a chip (no white-on-white); overlapping small labels spread both ways.
+## Labels
+- ✅ Inside color chips (you liked them) — "works, but not everywhere".
+- ✎ Large numbers went white-on-white; small labels near the axis didn't move → **fixed** (wide-label chip + anchor spread; re-verify A1).
 
-## 6. Number format
-- [x] Decimals, **Prefix**, **Suffix**, **Hide zeros**, **Group thousands**, **Negatives ( )**, **Plus sign**.
-- [ ] **Magnitude** now reads ×10⁻³/×10³ etc.; a `0` sits in stack order; **Separators** dropdown.
-
-## 7. Fonts & colors
-- [x] Font family applies to all labels; segment vs total sizes independent.
-- [x] Color scheme **Blue** + per-series swatch · [ ] Green/Red/Orange/Multi, Master accents, Auto-shades.
-
-## 8. Waterfall — reworked, re-verify
-- [ ] Deltas render rise/fall with running total + connectors + baseline.
-- [ ] Type **"e"** in a value cell → a computed total column from the baseline to the running sum.
-
----
-
-## Known-open (don't test yet)
-- **Axis labels shrink the plot** (#8) — plot-anchored box model pending.
-- **Sync-axis across charts**, **per-segment color override**, **waterfall connector-controlled totals**,
-  **line area fill**, **standard slide elements** (pending the "where should they live" decision).
-See [FEATURES.md](FEATURES.md) for the full status.
+## Waterfall & doughnut (were broken/wrong → reworked)
+- ✎ Waterfall "logic doesn't work yet" → **reworked** with running totals + the **"e" total column** (test A2).
+- ✎ Doughnut "not round" → **denser facets** + geometry proven by unit test (test A2).
