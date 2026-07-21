@@ -13,6 +13,15 @@ Last updated: **2026-07-21 pm**.
 
 # Part A — Needs your test 🔲
 
+## A0. Fixes from your latest round — re-verify
+- [ ] **Per-chart options**: each chart type now shows only relevant settings (line has no arrangement/orientation/connectors/totals; diff/CAGR offer only "series" on a line; legend only where it renders; etc.). Sanity-check each type.
+- [ ] **+ Category** now inserts to the **RIGHT** of the cursor.
+- [ ] **Mekko** "Label shows → Value" now shows the value (was stuck on %).
+- [ ] **Segment borders**: thin white separators on bar/mekko/waterfall segments.
+- [ ] **CAGR bubble** is a single **oval** shape holding the % (no separate box); nudged up to avoid the numbers — tell me if it still overlaps.
+- [ ] **Hidden rows/cols** show a red double-line **seam** where content is hidden ("Unhide all" restores).
+- [ ] **Grid selection** now shows a blue ring on the active cell + clearer range highlight.
+
 ## A1. Fixes from your 2026-07-21 pm feedback — please re-verify
 - [ ] Grid: `+ Series` inserts **below** the cursor (top when in the header row); `+ Category` **left** of the cursor, consistently; **multi-row/col select deletes all** selected.
 - [ ] Excel paste larger than the grid **grows the table**.
@@ -106,8 +115,19 @@ Legend: **✅** you confirmed it works · **✎** your feedback → what I did (
 
 ---
 
-# Decisions in progress
-- **Data grid → "feels like Excel out of the box"** (Silvan, 2026-07-21): not just formulas — a broader
-  question about which Excel behaviours the grid should have. **Not building piecemeal.** Next step is an
-  options review together (embed real Excel via Office.js? a grid library? extend the current grid?).
-- **Multi-series waterfall** — ✅ built (test above).
+# Big reworks — need design alignment before building
+1. **Agenda** — full rework per Silvan's spec: one placeholder per chapter, per-slide highlight,
+   auto-propagation of layout/content across agenda slides, TOC slide (none highlighted),
+   insert-between reorders, a hidden slide that blocks propagation, rename syncs everywhere. Large; phased.
+2. **Scatter rethink** — current X/Y/Size rows are confusing; want multiple colored point-series with
+   add/remove. Needs a new data shape (numeric X + a Y series per colour).
+3. **Pie** — Office.js can't set a native PPT pie wedge's angle (no adjustment API), so it can't be
+   data-driven; facets are the only path and leave a centre artifact. Decide: keep+improve facets, or drop.
+   (Also: donut-hole label reflow + outside labels are part of this rework.)
+4. **Waterfall build-ups** — `e` anywhere (mid-stack subtotals), per-series stacked build-ups, separate
+   totals for build-ups vs additions (Silvan's 22/32/36/59 example). Waterfall v3.
+5. **Undo (Ctrl+Z)** — native PowerPoint undo doesn't reliably revert our delete-and-recreate redraws.
+   Would need an in-pane undo stack. Known constraint.
+6. **Formula point-mode** — click cells to insert refs while typing a formula (Excel behaviour). Not built.
+
+- **Multi-series waterfall (basic)** — ✅ built; **formulas + hide/fold + persistence** — ✅ built.
