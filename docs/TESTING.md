@@ -28,6 +28,28 @@ the corresponding 🔵 → ✅ in [FEATURES.md](FEATURES.md).
 
 ---
 
+## ⭐⭐ New overnight (2026-07-21) — brand-new, test with fresh eyes
+These are freshly built and **never seen rendered**. Expect rough edges; note anything off.
+
+**Bug fixes**
+- [ ] **Same-slide copy-paste** now yields an independently editable copy (select the copy → edits only affect it).
+
+**Arrows** (Chart style → Arrows section)
+- [ ] **Difference arrow**: set "Between totals", From cat 1, To cat 2 → double-headed arrow with signed delta (e.g. `+20`); tick "Show %" → `+20 (+50%)`. Try "Between a series" + a series #.
+- [ ] Arrows have real **triangular heads** (not plain lines).
+- [ ] **CAGR arrow**: set "Of totals", From/To, Periods (or leave 0 = auto) → label like `CAGR +12.5%`.
+
+**Combination**
+- [ ] In the Colors list, tick **line** next to a series → that series draws as a line + markers over the bars.
+- [ ] Chart type **Combination** in the dropdown.
+- [ ] **Line 2nd axis** checkbox → line series scale on their own right-hand axis (turn on Axis labels to see right-side ticks).
+
+**New chart types** (Chart dropdown)
+- [ ] **Line** → all series as connected lines with markers + labels.
+- [ ] **Pie / doughnut** → slices sized by the first series; % inside, category outside. Set **Doughnut hole %** > 0 → ring with the total in the middle. ⚠️ Slices are a facet fan — check they look round.
+
+---
+
 ## 1. Core lifecycle
 - [ ] **Insert** a chart → default stacked column appears.
 - [ ] Click a **blank area** → pane says "No chart selected".

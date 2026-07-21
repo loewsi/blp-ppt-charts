@@ -102,8 +102,10 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - ⬜ Bars + one or more series drawn as a line (shares the column engine's axis)
 - ⬜ Secondary axis for the line series
 
-### Pie / doughnut — ⬜
-- ⬜ Single series → slices; % or value labels; doughnut hole size; leader lines; explode a slice
+### Pie / doughnut — 🔵
+- 🔵 First series → slices; % label inside, category label outside; doughnut hole + centre total *(new)*
+- ⬜ Leader lines; explode a slice; per-slice color pickers; multi-series (rings)
+- ⚠️ Slices are a triangle-facet fan (Office.js has no arc geometry) — **verify roundness in PowerPoint**
 
 ### Scatter / bubble — ⬜
 - ⬜ XY scatter (x,y per point); bubble adds a size dimension; point labels; quadrant lines
@@ -135,5 +137,13 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 ---
 
 ## Testing backlog (needs Silvan in PowerPoint)
-Everything marked 🔵 is unit-tested but not visually confirmed. Highest-value to verify first:
-waterfall render, negative values, connectors, reference line, legend positions, colors, resize/move, number formats.
+Everything marked 🔵 is unit-tested but not visually confirmed. See [TESTING.md](TESTING.md) for the
+walk-through. Newest (never seen rendered): difference & CAGR arrows, combination line series +
+secondary axis, line chart, pie/doughnut.
+
+## Still open from the overnight plan (not built yet)
+- ⬜ Scatter / bubble (D10)
+- ⬜ Mekko / Marimekko (D11)
+- ⬜ Waterfall rework — the "e" total cell + connector-controlled totals (E12)
+- ⬜ Agenda / deck TOC (F13)
+- ⬜ Polish: color picker + auto-shades, sync-axis-across-charts, per-segment color (G14)

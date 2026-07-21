@@ -27,11 +27,15 @@ generic `Primitive[]` (rect/text/line) → `render.ts` draws native shapes + tag
 labels — reuses the same primitives), register it in `layout.ts`. **`render.ts` and
 `persistence.ts` don't change.** Then let the task pane pick a chart type.
 
-## Status (updated 2026-07-20)
-- `npm run build` green; 59 unit tests pass (`npx vitest run`). Live deploy verified serving latest.
-- **Two chart families shipped:** column/bar (stacked/clustered/100%/horizontal, negatives,
-  connectors, reference line, manual axis min/max, number formats, legend, gridlines/axis) and
-  **waterfall** (running totals, rise/fall, connectors, signed labels).
+## Status (updated 2026-07-21)
+- `npm run build` green; 91 unit tests pass (`npx vitest run`). Live deploy auto-serves latest.
+- **Chart types:** column/bar (stacked/clustered/100%/horizontal, negatives, connectors, reference
+  line, manual axis min/max, number formats, legend, gridlines/axis), **line**, **combination**
+  (per-series line kind + secondary axis), **pie/doughnut**, and **waterfall** (needs rework).
+- **Annotations:** difference arrows + CAGR arrows (real triangular arrowheads in render.ts).
+- **Overnight build (2026-07-21):** A1 dup-id repair, A2 global label placement, B3 arrowheads,
+  B4 bar|line kind, C5/C6 arrows, D7 line, D8 combination, D9 pie. **Still open:** D10 scatter,
+  D11 mekko, E12 waterfall rework, F13 agenda, G14 polish. Each chunk is its own commit (revertable).
 - **`docs/FEATURES.md`** = the living status list (✅ tested / 🔵 built-not-verified / ⬜ open).
   **`docs/TESTING.md`** = the PowerPoint checklist for Silvan to flip 🔵 → ✅.
 - **Blind-rendering constraint:** Claude can't see rendered charts; everything 🔵 is unit-tested
