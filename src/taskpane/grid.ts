@@ -9,6 +9,7 @@
 // tested; the DOM/keyboard layer wraps them.
 import type { ChartData, Series } from "../model/chartModel";
 import { PALETTE } from "../model/chartModel";
+import { evaluateGrid } from "./formula";
 
 export type Cells = string[][]; // cells[row][col]; row 0 = categories, col 0 = series
 
@@ -98,6 +99,7 @@ let active = { r: 1, c: 1 };
 let anchor = { r: 1, c: 1 };
 let editing = false;
 let dragging = false;
+let computed = { display: [] as string[][], values: [] as number[][] }; // formula results, refreshed on render
 
 export function mountGrid(container: HTMLElement, changed?: () => void): void {
   host = container;
@@ -114,11 +116,16 @@ export function setGridData(data: ChartData): void {
 }
 
 export function getGridData(): ChartData {
-  const d = dataFromCells(cells, seriesColors);
-  d.series.forEach((s, i) => {
-    if (seriesKinds[i]) s.kind = seriesKinds[i];
-  });
-  return d;
+  // Chart data uses COMPUTED values, so formula cells feed the chart.
+  const { values } = evaluateGrid(cells);
+  const categories = (cells[0] ?? []).slice(1).map((v, i) => (v.trim() ? v.trim() : `Cat ${i + 1}`));
+  const series: Series[] = cells.slice(1).map((row, ri) => ({
+    name: (row[0] ?? "").trim() || `Series ${ri + 1}`,
+    color: seriesColors[ri] || PALETTE[ri % PALETTE.length],
+    values: categories.map((_, ci) => values[ri + 1]?.[ci + 1] ?? 0),
+    ...(seriesKinds[ri] ? { kind: seriesKinds[ri] } : {}),
+  }));
+  return { type: "barColumn", categories, series };
 }
 
 export function setSeriesColor(index: number, color: string): void {
@@ -142,6 +149,7 @@ export function getSelectionRange(): { r0: number; r1: number; c0: number; c1: n
 // ---- rendering -----------------------------------------------------------
 function render(): void {
   if (!host) return;
+  computed = evaluateGrid(cells); // refresh formula results
   host.innerHTML = "";
   const table = document.createElement("table");
   table.className = "xgrid";
@@ -151,7 +159,9 @@ function render(): void {
       const td = document.createElement("td");
       const inp = document.createElement("input");
       inp.className = "xcell" + (r === 0 || c === 0 ? " xhead" : "");
-      inp.value = val;
+      // Show the computed result; the raw formula appears only while editing.
+      inp.value = computed.display[r]?.[c] ?? val;
+      if ((val ?? "").trim().startsWith("=")) inp.classList.add("xformula");
       inp.readOnly = true;
       inp.dataset.r = String(r);
       inp.dataset.c = String(c);
@@ -164,6 +174,7 @@ function render(): void {
         // Focus left this cell while still editing (e.g. clicked a pane control): commit.
         if (editing && active.r === r && active.c === c) {
           editing = false;
+          render(); // refresh the computed display
           emit();
         }
       });
@@ -217,6 +228,7 @@ function moveTo(r: number, c: number, extend: boolean): void {
   active = { r: Math.min(Math.max(0, r), R - 1), c: Math.min(Math.max(0, c), C - 1) };
   if (!extend) anchor = { ...active };
   editing = false;
+  if (wasEditing) render(); // recompute formulas so the just-edited cell shows its result
   const el = inputAt(active.r, active.c);
   if (el) {
     el.readOnly = true;
@@ -233,10 +245,9 @@ function beginEdit(r: number, c: number, replaceWith?: string): void {
   const el = inputAt(r, c);
   if (!el) return;
   el.readOnly = false;
-  if (replaceWith !== undefined) {
-    el.value = replaceWith;
-    cells[r][c] = replaceWith;
-  }
+  // Editing reveals the raw entry (the formula), not the computed value.
+  el.value = replaceWith !== undefined ? replaceWith : cells[r][c] ?? "";
+  cells[r][c] = el.value;
   el.focus();
   const end = el.value.length;
   el.setSelectionRange(end, end);
@@ -255,8 +266,12 @@ function onMouseDown(r: number, c: number, e: MouseEvent): void {
     active = { r, c };
   }
   editing = false;
+  if (wasEditing) render(); // show the committed cell's computed result
   const el = inputAt(r, c);
-  if (el) el.readOnly = true;
+  if (el) {
+    el.readOnly = true;
+    el.focus();
+  }
   paint();
   if (wasEditing) emit();
 }

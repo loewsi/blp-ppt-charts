@@ -112,6 +112,7 @@ button.wide { width: 100%; }
 .chk.mini { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--muted, #667); }
 .agenda { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 12px; padding: 6px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 6px; resize: vertical; }
 .chk.mini input { margin: 0; }
+.xcell.xformula { font-style: italic; color: #2E75FF; }
 
 .paste { margin-top: 10px; }
 .paste summary {
