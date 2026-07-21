@@ -27,15 +27,20 @@ generic `Primitive[]` (rect/text/line) → `render.ts` draws native shapes + tag
 labels — reuses the same primitives), register it in `layout.ts`. **`render.ts` and
 `persistence.ts` don't change.** Then let the task pane pick a chart type.
 
-## Status (updated 2026-07-21)
-- `npm run build` green; 91 unit tests pass (`npx vitest run`). Live deploy auto-serves latest.
-- **Chart types:** column/bar (stacked/clustered/100%/horizontal, negatives, connectors, reference
-  line, manual axis min/max, number formats, legend, gridlines/axis), **line**, **combination**
-  (per-series line kind + secondary axis), **pie/doughnut**, and **waterfall** (needs rework).
-- **Annotations:** difference arrows + CAGR arrows (real triangular arrowheads in render.ts).
-- **Overnight build (2026-07-21):** A1 dup-id repair, A2 global label placement, B3 arrowheads,
-  B4 bar|line kind, C5/C6 arrows, D7 line, D8 combination, D9 pie. **Still open:** D10 scatter,
-  D11 mekko, E12 waterfall rework, F13 agenda, G14 polish. Each chunk is its own commit (revertable).
+## Status (updated 2026-07-21 pm)
+- `npm run build` green; **116 unit tests** pass (`npx vitest run`). Live deploy auto-serves latest.
+- **Chart types (all built):** column/bar, **line**, **combination** (per-series line + secondary
+  axis), **pie/doughnut**, **scatter/bubble**, **mekko**, **waterfall** (with "e" total columns).
+- **Annotations:** difference arrows, CAGR arrows (horizontal above chart), reference line, connectors.
+  Arrowheads are custom triangles (Office.js PowerPoint LineFormat has no arrowhead API); dashed
+  guides use real connectors (LineFormat.dashStyle).
+- **Also:** duplicate-id repair, orphan-legend cleanup, agenda slide generator, auto-shade colors,
+  relevant-only options panel, legend drawn outside the plot.
+- **New primitives:** arrow, triangle, ellipse (render.ts `makeShapes` returns Shape[]).
+- **Still open:** plot-anchored box model so axis labels don't shrink the plot (#8; needs the resize
+  poll to subtract decoration insets — do carefully); sync-axis across charts; per-segment color;
+  waterfall connector-controlled totals; line area fill (needs a polygon primitive). Each feature is
+  its own commit (revertable). See `docs/FEATURES.md` + `docs/TESTING.md`.
 - **`docs/FEATURES.md`** = the living status list (✅ tested / 🔵 built-not-verified / ⬜ open).
   **`docs/TESTING.md`** = the PowerPoint checklist for Silvan to flip 🔵 → ✅.
 - **Blind-rendering constraint:** Claude can't see rendered charts; everything 🔵 is unit-tested

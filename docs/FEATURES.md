@@ -27,9 +27,9 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - ⬜ Dates as categories; custom "value = 100%" base
 
 ### Colors
-- 🔵 Master theme accents (live) · Blue · Grayscale presets (more blue shades); per-series swatch
-- ⬜ Color picker + auto-generated shades; per-series picker showing the master scheme
-- ⬜ Per-segment color override + highlight; series outline; pattern fill
+- 🔵 Presets: Master accents (live) · Blue · Green · Red · Orange · Multi-color · Grayscale; per-series swatch *(new)*
+- 🔵 Auto-shades: pick a base color → light→dark ramp across the series *(new)*
+- ⬜ Per-series picker showing the master scheme; per-segment color override + highlight; series outline; pattern fill
 
 ### Segment / value labels
 - ✅ Inside chip with collision offset (Silvan: "labels inside are fine, I like them")
@@ -44,19 +44,20 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Legend
 - 🔵 Add/remove, position top/bottom/left/right, autofit box, own movable group
-- 🔵 Picking a position snaps the legend there; a manual drag stays until you pick a new position *(fixed)*
+- 🔵 Drawn OUTSIDE the plot, so toggling/repositioning never shifts the bars *(fixed #7)*
 - ⬜ Reorder entries independently; format one entry; border
 
 ### Axis, gridlines, baseline
-- 🔵 Baseline; optional axis labels (auto scale, ticks); optional gridlines; **axis line toggle** *(new)*
+- 🔵 Baseline; optional axis labels (auto scale, ticks); optional gridlines; axis line toggle
 - 🔵 Manual axis min/max
+- ⚠️ Turning on axis labels still shrinks the plot (plot-anchored box model pending, #8)
 - ⬜ Sync axis (same scale) across multiple charts
-- ⬜ Manual tick step; secondary axis; axis break; axis title
+- ⬜ Manual tick step; axis break; axis title
 
 ### Number formatting (shared engine)
-- 🔵 Decimals, magnitude ÷1e3/÷1e6 (no auto letter — add your own suffix), prefix, suffix
-- 🔵 Hide-zero (toggle respected), percent, plus sign, negatives in parentheses
-- 🔵 Separator style: `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / system  *(new)*
+- 🔵 Decimals, magnitude as a power of ten (×10⁻³/⁻⁶/⁻⁹, ×10³/⁶ — no auto letter), prefix, suffix *(new)*
+- 🔵 Hide-zero (toggle respected; zero shown in stack order), percent, plus sign, negatives in parentheses
+- 🔵 Separator style: `1,234.56` / `1.234,56` / `1'234.56` / `1 234,56` / system; group-thousands on by default
 - ⬜ Currency presets; per-label-type formats
 
 ### Fonts / text
@@ -71,9 +72,10 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 
 ### Annotations (data-driven)
 - 🔵 Series connectors (stacked columns)  *(new)*
-- 🔵 Difference arrows (totals or a series, between two categories, signed delta + optional %) *(new)*
-- 🔵 CAGR arrows (compound growth from→to over N periods; auto-derives periods) *(new)*
-- 🔵 Value / reference line (target line at a fixed value, labelled, **color configurable**)
+- 🔵 Difference arrows (totals or a series; signed delta + optional %; placement via diffPos) *(new)*
+- 🔵 CAGR arrows — horizontal arrow above the plot with a white % bubble *(new)*
+- 🔵 Value / reference line (fixed value, labelled, color configurable)
+- 🔵 Arrows use real triangular heads; guide lines are real dashed connectors
 - ⬜ Error bars / ranges
 
 ---
@@ -89,37 +91,39 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 - 🔵 Line series secondary (right-hand) axis *(new)*
 - ⬜ Category gaps / visual grouping; line area fill (needs a polygon primitive)
 
-### Waterfall — ⚠️ needs rework (Silvan: "logic does not work yet")
-- ⬜ Use the same categories/series grid + naming as the column family
-- ⬜ think-cell "e" cell = a calculated subtotal/total column
-- ⬜ Connector-controlled totals (choose where the total lands) — shared mechanic with CAGR from→to
+### Waterfall — 🔵 reworked
+- 🔵 Running totals, rise/fall bars, connectors, zero baseline, signed labels
+- 🔵 think-cell **"e" cell** → a computed total/subtotal column (baseline→running sum, distinct color) *(new)*
+- ⬜ Connector-controlled totals (delete a connector to start a new sum) — interactive, next step
 - ⬜ Bar (horizontal) orientation; per-bar color override
 
-### Line — ⬜
-- ⬜ Single/multi-series line; markers; value labels; connect-gaps; area fill option
+### Line — 🔵
+- 🔵 Multi-series lines with markers + value labels *(new)*
+- ⬜ Connect-gaps; area fill (needs a polygon primitive)
 
-### Combination — ⬜
-- ⬜ Bars + one or more series drawn as a line (shares the column engine's axis)
-- ⬜ Secondary axis for the line series
+### Combination — 🔵
+- 🔵 Bars + any series as a line (per-series toggle); optional secondary axis with manual min/max *(new)*
 
 ### Pie / doughnut — 🔵
-- 🔵 First series → slices; % label inside, category label outside; doughnut hole + centre total *(new)*
+- 🔵 First series → slices; % inside, category outside; doughnut hole + centre total *(new)*
 - ⬜ Leader lines; explode a slice; per-slice color pickers; multi-series (rings)
-- ⚠️ Slices are a triangle-facet fan (Office.js has no arc geometry) — **verify roundness in PowerPoint**
+- ⚠️ Slices are a ~105-facet fan (Office.js has no arc geometry); geometry unit-verified — **eyeball roundness**
 
-### Scatter / bubble — ⬜
-- ⬜ XY scatter (x,y per point); bubble adds a size dimension; point labels; quadrant lines
+### Scatter / bubble — 🔵
+- 🔵 Rows = X, Y, optional Size (bubble); points labelled by category; fitted axes; quadrant lines *(new)*
+- ⬜ Per-point color; trend line; axis titles
 
-### Mekko / Marimekko — ⬜
-- ⬜ Variable column widths (weighted by a total) + 100% stacked segments
+### Mekko / Marimekko — 🔵
+- 🔵 Column width ∝ category total; 100%-stacked segments; % labels, column totals *(new)*
+- ⬜ Width-axis (%) scale labels along the top
 
 ---
 
 ## Non-chart think-cell features
 
-### Agenda — ⬜
-- ⬜ Table-of-contents / agenda slides that auto-number and stay in sync across the deck;
-      current-chapter highlight; regenerate when sections change. (think-cell's "Agenda")
+### Agenda — 🔵 (v1)
+- 🔵 Pane chapter list → auto-numbered "Agenda" slide; re-run updates it in place (tagged) *(new)*
+- ⬜ Auto-sync from chapter markers across the deck; current-chapter highlight
 
 ### Standard slide elements — ⬜ (see "Where should slide elements live?" below)
 - ⬜ Harvey balls, checkmarks/crosses, stoplights, arrows/pointers, brackets, ticks
@@ -137,13 +141,12 @@ Architecture is shared: model → layout → render-plan → PowerPoint adapter.
 ---
 
 ## Testing backlog (needs Silvan in PowerPoint)
-Everything marked 🔵 is unit-tested but not visually confirmed. See [TESTING.md](TESTING.md) for the
-walk-through. Newest (never seen rendered): difference & CAGR arrows, combination line series +
-secondary axis, line chart, pie/doughnut.
+Everything marked 🔵 is unit-tested (116 tests) but not visually confirmed. See [TESTING.md](TESTING.md).
+Newest, never seen rendered: pie/doughnut, scatter/bubble, mekko, waterfall "e" totals, agenda,
+CAGR-above-chart, diff-arrow placement, auto-shades.
 
-## Still open from the overnight plan (not built yet)
-- ⬜ Scatter / bubble (D10)
-- ⬜ Mekko / Marimekko (D11)
-- ⬜ Waterfall rework — the "e" total cell + connector-controlled totals (E12)
-- ⬜ Agenda / deck TOC (F13)
-- ⬜ Polish: color picker + auto-shades, sync-axis-across-charts, per-segment color (G14)
+## Still open
+- ⬜ Plot-anchored box model so axis labels don't shrink the plot (#8 — needs resize-poll rework)
+- ⬜ Sync-axis across charts; per-segment color override (rest of G14)
+- ⬜ Waterfall connector-controlled totals; line area fill (needs polygon primitive)
+- ⬜ Standard slide elements (pending the "where should they live" decision)
