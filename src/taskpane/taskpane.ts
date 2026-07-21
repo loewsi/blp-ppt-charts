@@ -32,7 +32,7 @@ import {
 import { newId } from "../util/id";
 import { createOrUpdateAgenda } from "../office/agenda";
 import { shadesFrom } from "../util/color";
-import { mountGrid, setGridData, getGridData, setSeriesColor, setSeriesKind, getActive } from "./grid";
+import { mountGrid, setGridData, getGridData, setSeriesColor, setSeriesKind, getActive, getSelectionRange } from "./grid";
 
 // ---- state ---------------------------------------------------------------
 let currentData: ChartData = defaultData();
@@ -363,7 +363,9 @@ function readGrid(): ChartData {
 function addSeries(): void {
   currentData = readGrid();
   const i = currentData.series.length;
-  const at = Math.min(currentData.series.length, Math.max(0, getActive().r - 1) + 1); // below the cursor's series
+  // Cell row = series index + 1; row 0 is the category header. Insert BELOW the
+  // active series (splice index = active.r), or at the top when in the header row.
+  const at = Math.min(currentData.series.length, getActive().r);
   currentData.series.splice(at, 0, {
     name: `Series ${i + 1}`,
     color: PALETTE[i % PALETTE.length],
@@ -375,16 +377,21 @@ function addSeries(): void {
 
 function removeSeries(): void {
   currentData = readGrid();
-  if (currentData.series.length <= 1) return;
-  const idx = Math.min(currentData.series.length - 1, Math.max(0, getActive().r - 1)); // series the cursor is in
-  currentData.series.splice(idx, 1);
+  const { r0, r1 } = getSelectionRange();
+  // Selection rows → series indices (row 0 is the header). Delete all selected, keep ≥1.
+  const from = Math.max(0, r0 - 1);
+  const to = Math.max(0, r1 - 1);
+  const count = Math.min(to - from + 1, currentData.series.length - 1);
+  if (count <= 0) return;
+  currentData.series.splice(from, count);
   renderGrid();
   scheduleApply();
 }
 
 function addCategory(): void {
   currentData = readGrid();
-  const at = Math.min(currentData.categories.length, Math.max(0, getActive().c - 1)); // left of the cursor's category
+  // Insert to the LEFT of the active category (col 0 is the series-name column).
+  const at = Math.max(0, getActive().c - 1);
   currentData.categories.splice(at, 0, `Cat ${currentData.categories.length + 1}`);
   currentData.series.forEach((s) => s.values.splice(at, 0, 0));
   renderGrid();
@@ -393,10 +400,13 @@ function addCategory(): void {
 
 function removeCategory(): void {
   currentData = readGrid();
-  if (currentData.categories.length <= 1) return;
-  const idx = Math.min(currentData.categories.length - 1, Math.max(0, getActive().c - 1)); // category the cursor is in
-  currentData.categories.splice(idx, 1);
-  currentData.series.forEach((s) => s.values.splice(idx, 1));
+  const { c0, c1 } = getSelectionRange();
+  const from = Math.max(0, c0 - 1);
+  const to = Math.max(0, c1 - 1);
+  const count = Math.min(to - from + 1, currentData.categories.length - 1);
+  if (count <= 0) return;
+  currentData.categories.splice(from, count);
+  currentData.series.forEach((s) => s.values.splice(from, count));
   renderGrid();
   scheduleApply();
 }

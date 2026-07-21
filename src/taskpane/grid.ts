@@ -134,6 +134,11 @@ export function getActive(): { r: number; c: number } {
   return { r: active.r, c: active.c };
 }
 
+/** The current selection rectangle (inclusive), for multi-row/col operations. */
+export function getSelectionRange(): { r0: number; r1: number; c0: number; c1: number } {
+  return selRect();
+}
+
 // ---- rendering -----------------------------------------------------------
 function render(): void {
   if (!host) return;
