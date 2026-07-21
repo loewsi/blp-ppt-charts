@@ -7,7 +7,7 @@ const AXIS_COLOR = "#001C54";
 const GRID_COLOR = "#D7E2F4";
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
-const COL_GAP = 2; // gap between columns, points
+const COL_GAP = 0; // mekko columns are contiguous (no gap)
 const MIN_SEG = 12; // min segment height (pt) to carry a % label
 
 /**

@@ -219,7 +219,7 @@ const OPTION_IDS = [
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
   "optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax", "optReverseSeries", "optRefColor",
-  "optPieHole", "optScatterQuadrant",
+  "optPieHole", "optScatterQuadrant", "optScatterAxes",
   "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
   "labelOverflow",
@@ -279,6 +279,7 @@ function refreshVisibility(): void {
   // Pie-only / scatter-only.
   showLabel("optPieHole", isPie);
   showLabel("optScatterQuadrant", type === "scatter");
+  showLabel("optScatterAxes", type === "scatter");
   // Scatter uses value labels + gridlines/axis; hide the rest of the bar controls there.
   if (type === "scatter") {
     ["optGridlines", "optAxis"].forEach((id) => showLabel(id, true));
@@ -670,6 +671,7 @@ function readOptions(): ChartOptions {
     lineAxisMax: numOrNull("optLineAxisMax"),
     pieHole: Math.min(0.9, Math.max(0, (Number(v("optPieHole")) || 0) / 100)),
     scatterQuadrant: c("optScatterQuadrant"),
+    scatterAxes: c("optScatterAxes"),
     showConnectors: c("optConnectors"),
     reverseSeries: c("optReverseSeries"),
     referenceColor: v("optRefColor") || "#E8412C",
@@ -725,6 +727,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";
   (byId("optPieHole") as HTMLInputElement).value = String(Math.round((o.pieHole || 0) * 100));
   (byId("optScatterQuadrant") as HTMLInputElement).checked = o.scatterQuadrant;
+  (byId("optScatterAxes") as HTMLInputElement).checked = o.scatterAxes;
   (byId("optDiffArrow") as HTMLSelectElement).value = o.diffArrow;
   (byId("optDiffPercent") as HTMLInputElement).checked = o.diffPercent;
   (byId("optDiffFrom") as HTMLInputElement).value = String(o.diffFrom + 1);

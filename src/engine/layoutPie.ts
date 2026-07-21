@@ -1,7 +1,8 @@
 import type { ChartModel } from "../model/chartModel";
-import { DEFAULT_OPTIONS, PALETTES } from "../model/chartModel";
+import { DEFAULT_OPTIONS } from "../model/chartModel";
 import type { Primitive, ShapeMeta } from "./primitives";
 import { formatNumber, formatPercent } from "./format";
+import { shadesFrom } from "../util/color";
 
 const LABEL_DARK = "#001C54";
 const MAX_FACET = 0.06; // ≈3.4° per facet → a ~105-gon, visually smooth
@@ -25,7 +26,9 @@ export function layoutPie(model: ChartModel): Primitive[] {
   const total = values.reduce((a, b) => a + b, 0);
   if (total <= 0) return prims;
 
-  const palette = PALETTES.blue;
+  // Slice colors are shades of the (single) series color, so changing that swatch
+  // — or applying a scheme — recolors the whole pie.
+  const palette = shadesFrom(series.color, data.categories.length);
   const cx = box.left + box.width / 2;
   const cy = box.top + box.height / 2;
   const R = Math.max(10, Math.min(box.width, box.height) / 2 - LABEL_PAD);
@@ -45,9 +48,10 @@ export function layoutPie(model: ChartModel): Primitive[] {
     // Fan of facets across the slice.
     const facets = Math.max(1, Math.ceil(sweep / MAX_FACET));
     const step = sweep / facets;
+    const OVERLAP = 0.012; // rad — tiny overlap between facets of THIS slice closes anti-alias hairlines
     for (let f = 0; f < facets; f++) {
       const f0 = a0 + f * step;
-      const f1 = f0 + step;
+      const f1 = f0 + step + (f < facets - 1 ? OVERLAP : 0); // no bleed past the slice's end
       const half = (f1 - f0) / 2;
       const mid = (f0 + f1) / 2;
       const w = 2 * R * Math.sin(half);

@@ -74,9 +74,11 @@ export function layoutScatter(model: ChartModel): Primitive[] {
     prims.push({ kind: "line", x1: plotLeft, y1: yPix(yDiv), x2: plotLeft + plotW, y2: yPix(yDiv), color: AXIS_COLOR, weight: 0.75, dashed: true, meta: { objectType: "quadrant" } });
   }
 
-  // Axes (left + bottom).
-  prims.push({ kind: "line", x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
-  prims.push({ kind: "line", x1: plotLeft, y1: plotTop + plotH, x2: plotLeft + plotW, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "baseline" } });
+  // Axes (left + bottom) — optional.
+  if (opt.scatterAxes) {
+    prims.push({ kind: "line", x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "valueAxis" } });
+    prims.push({ kind: "line", x1: plotLeft, y1: plotTop + plotH, x2: plotLeft + plotW, y2: plotTop + plotH, color: AXIS_COLOR, weight: 1, meta: { objectType: "baseline" } });
+  }
 
   // Points (bubbles sized by area ∝ size).
   const maxSize = sizes ? Math.max(1, ...sizes) : 1;

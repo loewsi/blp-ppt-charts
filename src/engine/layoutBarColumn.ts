@@ -556,12 +556,16 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     prims.push({ kind: "text", x: mx - bw / 2, y: my - 8, w: bw, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "center", family: fam, meta: { objectType: "cagrArrow" } });
   }
 
+  // With no bar series (a line chart) there are no totals, so compare a series.
+  const diffMode = nBar === 0 && opt.diffArrow === "total" ? "series" : opt.diffArrow;
+  const cagrMode = nBar === 0 && opt.cagrArrow === "total" ? "series" : opt.cagrArrow;
+
   if (opt.diffArrow !== "off" && isColumn && nCats >= 2) {
     const fi = clampIdx(opt.diffFrom, nCats);
     const ti = clampIdx(opt.diffTo, nCats);
     if (fi !== ti) {
-      const v1 = catValue(fi, opt.diffArrow, opt.diffSeries);
-      const v2 = catValue(ti, opt.diffArrow, opt.diffSeries);
+      const v1 = catValue(fi, diffMode as "total" | "series", opt.diffSeries);
+      const v2 = catValue(ti, diffMode as "total" | "series", opt.diffSeries);
       const delta = v2 - v1;
       let label = formatNumber(delta, { ...nf, plusSign: true, hideZero: false });
       if (opt.diffPercent && v1 !== 0) {
@@ -576,8 +580,8 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     const fi = clampIdx(opt.cagrFrom, nCats);
     const ti = clampIdx(opt.cagrTo, nCats);
     if (fi !== ti) {
-      const v1 = catValue(fi, opt.cagrArrow, opt.cagrSeries);
-      const v2 = catValue(ti, opt.cagrArrow, opt.cagrSeries);
+      const v1 = catValue(fi, cagrMode as "total" | "series", opt.cagrSeries);
+      const v2 = catValue(ti, cagrMode as "total" | "series", opt.cagrSeries);
       const periods = opt.cagrPeriods > 0 ? opt.cagrPeriods : Math.abs(order.indexOf(ti) - order.indexOf(fi));
       drawCagrArrow(fi, ti, v1, v2, cagrLabel(v1, v2, periods));
     }
