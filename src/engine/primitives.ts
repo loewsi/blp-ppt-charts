@@ -90,4 +90,34 @@ export interface ArrowPrimitive {
   meta?: ShapeMeta;
 }
 
-export type Primitive = RectPrimitive | TextPrimitive | LinePrimitive | ArrowPrimitive;
+/** An isosceles triangle in its bounding box, rotated about the box center.
+ *  Used to build pie/doughnut slices as a fan of thin facets. */
+export interface TrianglePrimitive {
+  kind: "triangle";
+  x: number; // bounding-box top-left
+  y: number;
+  w: number;
+  h: number;
+  rotation: number; // degrees, clockwise
+  fill: string;
+  meta?: ShapeMeta;
+}
+
+/** An ellipse/circle in its bounding box (scatter points, doughnut hole). */
+export interface EllipsePrimitive {
+  kind: "ellipse";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  fill: string;
+  meta?: ShapeMeta;
+}
+
+export type Primitive =
+  | RectPrimitive
+  | TextPrimitive
+  | LinePrimitive
+  | ArrowPrimitive
+  | TrianglePrimitive
+  | EllipsePrimitive;

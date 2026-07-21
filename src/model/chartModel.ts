@@ -62,6 +62,7 @@ export interface ChartOptions {
   reverseSeries: boolean; // reverse the series stacking / cluster order
   showAxisLine: boolean; // draw the value-axis line (y-axis for columns)
   lineSecondaryAxis: boolean; // scale line series on their own right-hand axis
+  pieHole: number; // doughnut hole as a fraction of the radius (0 = full pie)
   referenceValue: number | null; // horizontal reference/target line at this value (null = off)
   referenceColor: string; // color of the reference line + its label
   // Difference arrow between two categories: "total" compares column totals,
@@ -164,6 +165,7 @@ export const DEFAULT_OPTIONS: ChartOptions = {
   reverseSeries: false,
   showAxisLine: false,
   lineSecondaryAxis: false,
+  pieHole: 0,
   referenceValue: null,
   referenceColor: "#E8412C",
   diffArrow: "off",

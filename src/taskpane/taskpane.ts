@@ -215,7 +215,7 @@ const OPTION_IDS = [
   "chartType", "optOrientation", "optGrouping", "optGap", "optRefValue", "optAxisMin", "optAxisMax",
   "optTotals", "optLabels", "optReverse",
   "optLegend", "legendPosition", "optGridlines", "optAxis", "optAxisLine", "optConnectors",
-  "optLineSecondaryAxis", "optReverseSeries", "optRefColor",
+  "optLineSecondaryAxis", "optReverseSeries", "optRefColor", "optPieHole",
   "optDiffArrow", "optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries",
   "optCagrArrow", "optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods",
   "labelOverflow",
@@ -555,6 +555,7 @@ function readOptions(): ChartOptions {
     showValueAxis: c("optAxis"),
     showAxisLine: c("optAxisLine"),
     lineSecondaryAxis: c("optLineSecondaryAxis"),
+    pieHole: Math.min(0.9, Math.max(0, (Number(v("optPieHole")) || 0) / 100)),
     showConnectors: c("optConnectors"),
     reverseSeries: c("optReverseSeries"),
     referenceColor: v("optRefColor") || "#E8412C",
@@ -605,6 +606,7 @@ function setOptionsUI(o: ChartOptions): void {
   (byId("optConnectors") as HTMLInputElement).checked = o.showConnectors;
   (byId("optReverseSeries") as HTMLInputElement).checked = o.reverseSeries;
   (byId("optRefColor") as HTMLInputElement).value = o.referenceColor || "#E8412C";
+  (byId("optPieHole") as HTMLInputElement).value = String(Math.round((o.pieHole || 0) * 100));
   (byId("optDiffArrow") as HTMLSelectElement).value = o.diffArrow;
   (byId("optDiffPercent") as HTMLInputElement).checked = o.diffPercent;
   (byId("optDiffFrom") as HTMLInputElement).value = String(o.diffFrom + 1);

@@ -163,6 +163,31 @@ function makeShapes(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoin
     return out;
   }
 
+  if (p.kind === "triangle") {
+    const s = shapes.addGeometricShape(PowerPoint.GeometricShapeType.triangle, {
+      left: p.x,
+      top: p.y,
+      width: p.w,
+      height: p.h,
+    });
+    s.fill.setSolidColor(p.fill);
+    s.lineFormat.visible = false;
+    if (p.rotation) s.rotation = p.rotation;
+    return [s];
+  }
+
+  if (p.kind === "ellipse") {
+    const s = shapes.addGeometricShape(PowerPoint.GeometricShapeType.ellipse, {
+      left: p.x,
+      top: p.y,
+      width: p.w,
+      height: p.h,
+    });
+    s.fill.setSolidColor(p.fill);
+    s.lineFormat.visible = false;
+    return [s];
+  }
+
   // text
   const s = shapes.addTextBox(p.text, { left: p.x, top: p.y, width: p.w, height: p.h });
   if (p.bg) s.fill.setSolidColor(p.bg);

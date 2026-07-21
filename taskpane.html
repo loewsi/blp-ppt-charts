@@ -36,6 +36,7 @@
               <option value="barColumn">Column / Bar</option>
               <option value="line">Line</option>
               <option value="combination">Combination</option>
+              <option value="pie">Pie / doughnut</option>
               <option value="waterfall">Waterfall</option>
             </select>
           </label>
@@ -57,6 +58,9 @@
           </label>
           <label>Reference line
             <input id="optRefValue" type="number" step="any" placeholder="off" />
+          </label>
+          <label>Doughnut hole %
+            <input id="optPieHole" type="number" min="0" max="90" step="5" value="0" />
           </label>
           <label>Reference color
             <input id="optRefColor" type="color" value="#E8412C" />
