@@ -27,6 +27,12 @@ Last updated: **2026-07-21 pm**.
 - [ ] **Scatter**: rows auto-named **X / Y / Size**; **Scatter axes** toggle hides the axes.
 - [ ] **Pie**: changing the color **recolors** it (slices are shades of the series color); **white hairlines** gone.
 
+## A1b. Datasheet — Excel-like (new)
+- [ ] **Formulas**: type `=B2+B3` or `=SUM(B2:D2)` in a cell → shows the result (blue italic); double-click shows the formula; the chart uses the computed value. (A1 addressing: B2 = first data value.)
+- [ ] **Formulas persist**: save → close → reopen the .pptx → the formula is still there (not frozen to a number).
+- [ ] **Hide row / Hide col**: select a helper row/col → Hide → it leaves the view AND the chart, but a formula referencing it still works. **Unhide all** brings them back.
+- [ ] Adding/removing series or categories, and applying a color scheme, **no longer wipes** your formulas.
+
 ## A2. Brand-new — first render
 - [ ] **Waterfall "e"** total column (baseline → running sum).
 - [ ] **Multi-series waterfall**: add a 2nd series → each step stacks its series as sub-segments (colored per series); running total = the per-step sum.
