@@ -63,6 +63,7 @@ Office.onReady((info) => {
   setOptionsUI(defaultOptions());
   renderGrid();
   setMode();
+  refreshVisibility();
 
   const caps = detectCapabilities();
   if (!caps.supportsGrouping) {
@@ -233,7 +234,55 @@ function wire(): void {
   byId("transposeBtn").addEventListener("click", () => transpose());
   byId("applyColorsBtn").addEventListener("click", () => guard(applyColors));
   // Live apply: changing any style/format control re-renders the current chart.
-  OPTION_IDS.forEach((id) => byId(id).addEventListener("change", () => scheduleApply()));
+  OPTION_IDS.forEach((id) =>
+    byId(id).addEventListener("change", () => {
+      refreshVisibility();
+      scheduleApply();
+    })
+  );
+}
+
+/** Hide the option controls that don't apply to the current chart type / toggles,
+ *  so the panel only shows what's relevant (Silvan: "only see the relevant options"). */
+function refreshVisibility(): void {
+  const type = readChartType();
+  const barFamily = type === "barColumn" || type === "combination" || type === "line";
+  const hasLine = type === "combination" || type === "line";
+  const isPie = type === "pie";
+
+  const showLabel = (inputId: string, show: boolean) => {
+    const lbl = byId(inputId).closest("label") as HTMLElement | null;
+    if (lbl) lbl.style.display = show ? "" : "none";
+  };
+  const showEl = (id: string, show: boolean) => {
+    const e = document.getElementById(id);
+    if (e) e.style.display = show ? "" : "none";
+  };
+
+  // Bar/line-family controls (irrelevant to pie).
+  ["optOrientation", "optGrouping", "optGap", "optConnectors", "optReverse", "optReverseSeries",
+   "optGridlines", "optAxis", "optAxisLine", "optLegend", "legendPosition", "optRefValue",
+   "optAxisMin", "optAxisMax"].forEach((id) => showLabel(id, barFamily));
+
+  // Line/combination-only.
+  ["optLineSecondaryAxis", "optLineAxisMin", "optLineAxisMax"].forEach((id) => showLabel(id, hasLine));
+
+  // Pie-only.
+  showLabel("optPieHole", isPie);
+
+  // Reference-line color only once a reference value is set.
+  const refSet = (byId("optRefValue") as HTMLInputElement).value.trim() !== "";
+  showLabel("optRefColor", barFamily && refSet);
+
+  // Arrows: whole section only for the column family; sub-fields only when the arrow is on.
+  showEl("arrowsHeading", barFamily);
+  showEl("arrowsOpts", barFamily);
+  const diffOn = (byId("optDiffArrow") as HTMLSelectElement).value !== "off";
+  ["optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos"].forEach((id) =>
+    showLabel(id, diffOn)
+  );
+  const cagrOn = (byId("optCagrArrow") as HTMLSelectElement).value !== "off";
+  ["optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods"].forEach((id) => showLabel(id, cagrOn));
 }
 
 // ---- grid bridge ---------------------------------------------------------
@@ -376,6 +425,7 @@ async function doInsert(over: Partial<ChartOptions>): Promise<void> {
   currentName = "";
   currentId = null;
   setOptionsUI({ ...defaultOptions(), ...over });
+  refreshVisibility();
   renderGrid();
   const data = readGrid();
   data.type = readChartType();
@@ -459,6 +509,7 @@ function applyModel(model: ChartModel): void {
   (byId("chartType") as HTMLSelectElement).value = model.data.type;
   renderGrid();
   setMode();
+  refreshVisibility();
 }
 
 function readChartType(): ChartType {
