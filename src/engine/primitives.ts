@@ -43,6 +43,7 @@ export interface RectPrimitive {
   w: number;
   h: number;
   fill: string; // "#RRGGBB"
+  rounded?: boolean; // render as a rounded rectangle (e.g. a label bubble)
   meta?: ShapeMeta;
 }
 

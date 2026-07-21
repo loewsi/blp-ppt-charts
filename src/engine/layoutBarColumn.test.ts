@@ -370,13 +370,14 @@ describe("layoutBarColumn — difference & CAGR arrows", () => {
     expect(arrowText(prims)[0].text).toBe("+20 (+50%)"); // 20/40 = 50%
   });
 
-  it("CAGR arrow is a horizontal arrow above the chart, labelled with the growth", () => {
-    // total A=40 → B=60 over 1 period → +50%
+  it("CAGR arrow is sloped (follows the totals) with a number-only label + rounded bubble", () => {
+    // total A=40 → B=60 over 1 period → +50%; B is taller so the arrow slopes up
     const prims = layoutBarColumn(model({ cagrArrow: "total", cagrFrom: 0, cagrTo: 1, cagrPeriods: 1 }));
     const arrow = prims.find((s) => s.kind === "arrow" && s.meta?.objectType === "cagrArrow");
-    expect(arrow && arrow.kind === "arrow" && Math.abs(arrow.y1 - arrow.y2) < 0.5).toBe(true); // horizontal
+    expect(arrow && arrow.kind === "arrow" && arrow.y2 < arrow.y1).toBe(true); // "to" end higher on screen
+    expect(prims.some((s) => s.kind === "rect" && s.rounded && s.meta?.objectType === "cagrArrow")).toBe(true);
     const label = prims.find((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "cagrArrow");
-    expect(label?.text).toBe("CAGR +50%");
+    expect(label?.text).toBe("+50%");
   });
 
   it("difference arrow position follows diffPos (slot boundary)", () => {
@@ -389,15 +390,15 @@ describe("layoutBarColumn — difference & CAGR arrows", () => {
 });
 
 describe("cagrLabel", () => {
-  it("computes compound growth over periods", () => {
-    expect(cagrLabel(100, 121, 2)).toBe("CAGR +10%"); // sqrt(1.21)-1 = 10%
+  it("computes compound growth over periods (number only)", () => {
+    expect(cagrLabel(100, 121, 2)).toBe("+10%"); // sqrt(1.21)-1 = 10%
   });
   it("handles decline", () => {
-    expect(cagrLabel(100, 90, 1)).toBe("CAGR −10%");
+    expect(cagrLabel(100, 90, 1)).toBe("−10%");
   });
   it("guards invalid inputs", () => {
-    expect(cagrLabel(0, 100, 2)).toBe("CAGR n/a");
-    expect(cagrLabel(100, 100, 0)).toBe("CAGR n/a");
+    expect(cagrLabel(0, 100, 2)).toBe("n/a");
+    expect(cagrLabel(100, 100, 0)).toBe("n/a");
   });
 });
 

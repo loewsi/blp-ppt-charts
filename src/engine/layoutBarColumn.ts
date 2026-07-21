@@ -517,25 +517,31 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       opt.diffPos >= 0
         ? plotLeft + Math.min(nCats, Math.max(0, Math.round(opt.diffPos))) * slot
         : (xF + xT) / 2;
-    prims.push({ kind: "line", x1: xF, y1, x2: xA, y2: y1, color: ARROW_COLOR, weight: 0.75, dashed: true, meta: { objectType: "differenceArrow" } });
-    prims.push({ kind: "line", x1: xT, y1: y2, x2: xA, y2, color: ARROW_COLOR, weight: 0.75, dashed: true, meta: { objectType: "differenceArrow" } });
+    prims.push({ kind: "line", x1: xF, y1, x2: xA, y2: y1, color: ARROW_COLOR, weight: 0.75, meta: { objectType: "differenceArrow" } });
+    prims.push({ kind: "line", x1: xT, y1: y2, x2: xA, y2, color: ARROW_COLOR, weight: 0.75, meta: { objectType: "differenceArrow" } });
     prims.push({ kind: "arrow", x1: xA, y1, x2: xA, y2, color: ARROW_COLOR, weight: 1.25, doubleHeaded: true, meta: { objectType: "differenceArrow" } });
     const w = estTextW(label, 10);
     prims.push({ kind: "text", x: xA + 4, y: (y1 + y2) / 2 - 8, w, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "left", family: fam, bg: "#FFFFFF", meta: { objectType: "differenceArrow" } });
   }
 
-  // CAGR arrow: a horizontal arrow above the plot from the "from" to the "to"
-  // category, with a white % bubble in the middle (think-cell style).
-  function drawCagrArrow(fromCi: number, toCi: number, label: string) {
+  // CAGR arrow: a SLOPED arrow that rides above the two totals (from a fixed
+  // offset above the "from" total to the same offset above the "to" total), with
+  // a rounded white % bubble. The slope reflects the actual growth.
+  function drawCagrArrow(fromCi: number, toCi: number, vFrom: number, vTo: number, label: string) {
     const kFrom = order.indexOf(fromCi);
     const kTo = order.indexOf(toCi);
     if (kFrom < 0 || kTo < 0) return;
     const xF = plotLeft + kFrom * slot + slot / 2;
     const xT = plotLeft + kTo * slot + slot / 2;
-    const y = plotTop - cagrBand / 2 - 2; // in the reserved band above the plot
-    prims.push({ kind: "arrow", x1: xF, y1: y, x2: xT, y2: y, color: ARROW_COLOR, weight: 1.25, meta: { objectType: "cagrArrow" } });
-    const w = estTextW(label, 10) + 6;
-    prims.push({ kind: "text", x: (xF + xT) / 2 - w / 2, y: y - 8, w, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "center", family: fam, bg: "#FFFFFF", meta: { objectType: "cagrArrow" } });
+    const off = 24; // sit above each total (and its label)
+    const yF = yv(Math.max(0, vFrom)) - off;
+    const yT = yv(Math.max(0, vTo)) - off;
+    prims.push({ kind: "arrow", x1: xF, y1: yF, x2: xT, y2: yT, color: ARROW_COLOR, weight: 1.5, headSize: 8, meta: { objectType: "cagrArrow" } });
+    const bw = estTextW(label, 10) + 10;
+    const mx = (xF + xT) / 2;
+    const my = (yF + yT) / 2;
+    prims.push({ kind: "rect", x: mx - bw / 2, y: my - 9, w: bw, h: 18, fill: "#FFFFFF", rounded: true, meta: { objectType: "cagrArrow" } });
+    prims.push({ kind: "text", x: mx - bw / 2, y: my - 8, w: bw, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "center", family: fam, meta: { objectType: "cagrArrow" } });
   }
 
   if (opt.diffArrow !== "off" && isColumn && nCats >= 2) {
@@ -561,7 +567,7 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const v1 = catValue(fi, opt.cagrArrow, opt.cagrSeries);
       const v2 = catValue(ti, opt.cagrArrow, opt.cagrSeries);
       const periods = opt.cagrPeriods > 0 ? opt.cagrPeriods : Math.abs(order.indexOf(ti) - order.indexOf(fi));
-      drawCagrArrow(fi, ti, cagrLabel(v1, v2, periods));
+      drawCagrArrow(fi, ti, v1, v2, cagrLabel(v1, v2, periods));
     }
   }
 
@@ -570,12 +576,12 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
   return prims;
 }
 
-/** CAGR label like "CAGR +12.5%". Returns "n/a" when it can't be computed. */
+/** CAGR label — just the signed percentage (e.g. "+12.5%"). "n/a" if not computable. */
 export function cagrLabel(from: number, to: number, periods: number): string {
-  if (periods <= 0 || from <= 0 || to <= 0) return "CAGR n/a";
+  if (periods <= 0 || from <= 0 || to <= 0) return "n/a";
   const r = (Math.pow(to / from, 1 / periods) - 1) * 100;
   const rounded = Math.round(r * 10) / 10;
-  return `CAGR ${rounded >= 0 ? "+" : "−"}${Math.abs(rounded)}%`;
+  return `${rounded >= 0 ? "+" : "−"}${Math.abs(rounded)}%`;
 }
 
 /** "Nice" axis tick values from 0 up to ~max (1/2/5 × 10^n steps). */

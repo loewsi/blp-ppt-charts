@@ -139,12 +139,10 @@ function makeHead(
 
 function makeShapes(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoint.Shape[] {
   if (p.kind === "rect") {
-    const s = shapes.addGeometricShape(PowerPoint.GeometricShapeType.rectangle, {
-      left: p.x,
-      top: p.y,
-      width: p.w,
-      height: p.h,
-    });
+    const s = shapes.addGeometricShape(
+      p.rounded ? PowerPoint.GeometricShapeType.roundRectangle : PowerPoint.GeometricShapeType.rectangle,
+      { left: p.x, top: p.y, width: p.w, height: p.h }
+    );
     s.fill.setSolidColor(p.fill);
     s.lineFormat.visible = false;
     return [s];
@@ -168,9 +166,17 @@ function makeShapes(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoin
   }
 
   if (p.kind === "arrow") {
-    const out = [makeLine(shapes, p.x1, p.y1, p.x2, p.y2, p.color, p.weight)];
-    const angle = (Math.atan2(p.y2 - p.y1, p.x2 - p.x1) * 180) / Math.PI;
+    const dx = p.x2 - p.x1;
+    const dy = p.y2 - p.y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
     const size = p.headSize ?? 7;
+    // Stop the body at the base of each head so the line rectangle never pokes
+    // through the arrow tip.
+    const back = p.doubleHeaded ? size : 0;
+    const out = [makeLine(shapes, p.x1 + ux * back, p.y1 + uy * back, p.x2 - ux * size, p.y2 - uy * size, p.color, p.weight)];
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
     out.push(makeHead(shapes, p.x2, p.y2, angle, size, p.color));
     if (p.doubleHeaded) out.push(makeHead(shapes, p.x1, p.y1, angle + 180, size, p.color));
     return out;
