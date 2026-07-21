@@ -231,8 +231,10 @@ export function gridRemoveSeries(): void {
 export function gridAddCategory(): void {
   clearHidden();
   const width = cells[0]?.length ?? 1;
-  const at = Math.max(1, active.c); // left of the active category
+  const at = Math.min(width, active.c + 1); // right of the active category
   cells.forEach((row, r) => row.splice(at, 0, r === 0 ? `Cat ${width}` : ""));
+  active.c = at;
+  anchor.c = at;
   clampActive();
   render();
   emit();
@@ -303,14 +305,21 @@ function render(): void {
   host.innerHTML = "";
   const table = document.createElement("table");
   table.className = "xgrid";
+  let prevRow = -1;
   cells.forEach((row, r) => {
     if (hiddenRows.has(r)) return; // hidden helper row
+    const rowGap = prevRow >= 0 && r - prevRow > 1; // a hidden row sits just above
+    prevRow = r;
     const tr = document.createElement("tr");
+    let prevCol = -1;
     row.forEach((val, c) => {
       if (hiddenCols.has(c)) return; // hidden helper column
+      const colGap = prevCol >= 0 && c - prevCol > 1; // a hidden column sits just left
+      prevCol = c;
       const td = document.createElement("td");
       const inp = document.createElement("input");
-      inp.className = "xcell" + (r === 0 || c === 0 ? " xhead" : "");
+      inp.className =
+        "xcell" + (r === 0 || c === 0 ? " xhead" : "") + (rowGap ? " hide-top" : "") + (colGap ? " hide-left" : "");
       // Show the computed result; the raw formula appears only while editing.
       inp.value = computed.display[r]?.[c] ?? val;
       if ((val ?? "").trim().startsWith("=")) inp.classList.add("xformula");

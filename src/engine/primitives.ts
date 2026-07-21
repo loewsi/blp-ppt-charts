@@ -44,6 +44,8 @@ export interface RectPrimitive {
   h: number;
   fill: string; // "#RRGGBB"
   rounded?: boolean; // render as a rounded rectangle (e.g. a label bubble)
+  stroke?: string; // optional border color (segment separation)
+  strokeWeight?: number; // border weight in points (default 0.75)
   meta?: ShapeMeta;
 }
 
@@ -60,6 +62,7 @@ export interface TextPrimitive {
   align: Align;
   family?: string; // font family; defaults to Roboto in the adapter
   bg?: string; // optional background fill (e.g. segment color behind a small label)
+  bgShape?: "ellipse" | "roundRect"; // draw the label as a filled shape holding the text (one shape)
   autofit?: boolean; // let PowerPoint size the box to the text (used for legend)
   meta?: ShapeMeta;
 }

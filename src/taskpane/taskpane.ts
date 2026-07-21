@@ -289,8 +289,20 @@ function maybeNameScatterRows(): void {
  *  so the panel only shows what's relevant (Silvan: "only see the relevant options"). */
 function refreshVisibility(): void {
   const type = readChartType();
-  const barFamily = type === "barColumn" || type === "combination" || type === "line";
+  const isBar = type === "barColumn";
+  const isCombination = type === "combination";
+  const isLine = type === "line";
   const isPie = type === "pie";
+  const isScatter = type === "scatter";
+  const isMekko = type === "mekko";
+  const isWaterfall = type === "waterfall";
+
+  // Which chart types each control applies to:
+  const bars = isBar || isCombination; // stacking/orientation/connectors
+  const axisFamily = isBar || isCombination || isLine; // has a value axis
+  const hasSeriesLegend = isBar || isCombination || isLine; // only these render a legend today
+  const hasSegmentLabels = isBar || isCombination || isLine || isMekko; // "Label shows" applies
+  const hasTotals = isBar || isCombination || isMekko || isWaterfall;
 
   const showLabel = (inputId: string, show: boolean) => {
     const lbl = byId(inputId).closest("label") as HTMLElement | null;
@@ -301,41 +313,49 @@ function refreshVisibility(): void {
     if (e) e.style.display = show ? "" : "none";
   };
 
-  // Bar/line-family controls (irrelevant to pie).
-  ["optOrientation", "optGrouping", "optGap", "optConnectors", "optReverse", "optReverseSeries",
-   "optGridlines", "optAxis", "optAxisLine", "optLegend", "legendPosition", "optRefValue",
-   "optAxisMin", "optAxisMax"].forEach((id) => showLabel(id, barFamily));
+  // Layout/shape controls.
+  showLabel("optOrientation", bars);
+  showLabel("optGrouping", bars);
+  showLabel("optGap", bars || isWaterfall);
+  showLabel("optConnectors", bars);
+  showLabel("optReverse", bars);
+  showLabel("optReverseSeries", bars);
+  showLabel("optTotals", hasTotals);
+  showLabel("optLabels", true); // value labels apply everywhere
+  // Axis / grid / legend / reference.
+  ["optGridlines", "optAxis", "optAxisLine"].forEach((id) => showLabel(id, axisFamily || isScatter));
+  showLabel("optLegend", hasSeriesLegend);
+  showLabel("legendPosition", hasSeriesLegend);
+  ["optRefValue", "optAxisMin", "optAxisMax"].forEach((id) => showLabel(id, axisFamily));
+  const refSet = (byId("optRefValue") as HTMLInputElement).value.trim() !== "";
+  showLabel("optRefColor", axisFamily && refSet);
+  // Label controls.
+  showLabel("labelMode", hasSegmentLabels);
+  showLabel("labelOverflow", bars);
 
-  // Combination only: the 2nd-axis toggle; its min/max only when the toggle is on.
-  const isCombination = type === "combination";
+  // Combination-only: 2nd axis (+ min/max only when on) and per-series line toggles.
   showLabel("optLineSecondaryAxis", isCombination);
   const secOn = (byId("optLineSecondaryAxis") as HTMLInputElement).checked;
   ["optLineAxisMin", "optLineAxisMax"].forEach((id) => showLabel(id, isCombination && secOn));
-  // Per-series "line" checkboxes only for combination.
   document.querySelectorAll<HTMLElement>(".line-toggle").forEach((e) => (e.style.display = isCombination ? "" : "none"));
 
-  // Pie-only / scatter-only.
+  // Pie / scatter specifics.
   showLabel("optPieHole", isPie);
-  showLabel("optScatterQuadrant", type === "scatter");
-  showLabel("optScatterAxes", type === "scatter");
-  // Scatter uses value labels + gridlines/axis; hide the rest of the bar controls there.
-  if (type === "scatter") {
-    ["optGridlines", "optAxis"].forEach((id) => showLabel(id, true));
-  }
+  showLabel("optScatterQuadrant", isScatter);
+  showLabel("optScatterAxes", isScatter);
 
-  // Reference-line color only once a reference value is set.
-  const refSet = (byId("optRefValue") as HTMLInputElement).value.trim() !== "";
-  showLabel("optRefColor", barFamily && refSet);
-
-  // Arrows: whole section only for the column family; sub-fields only when the arrow is on.
-  showEl("arrowsHeading", barFamily);
-  showEl("arrowsOpts", barFamily);
+  // Arrows: column family + line; sub-fields only when the arrow is on.
+  const arrowsOk = axisFamily;
+  showEl("arrowsHeading", arrowsOk);
+  showEl("arrowsOpts", arrowsOk);
   const diffOn = (byId("optDiffArrow") as HTMLSelectElement).value !== "off";
   ["optDiffPercent", "optDiffFrom", "optDiffTo", "optDiffSeries", "optDiffPos"].forEach((id) =>
     showLabel(id, diffOn)
   );
   const cagrOn = (byId("optCagrArrow") as HTMLSelectElement).value !== "off";
   ["optCagrFrom", "optCagrTo", "optCagrSeries", "optCagrPeriods"].forEach((id) => showLabel(id, cagrOn));
+  // A line chart has no totals, so difference/CAGR can only compare series.
+  setArrowTotalsAllowed(!isLine);
 
   // Data-entry hint per chart type.
   const hints: Partial<Record<typeof type, string>> = {
@@ -348,6 +368,16 @@ function refreshVisibility(): void {
   const text = hints[type] ?? "";
   hint.textContent = text;
   hint.hidden = text === "";
+}
+
+/** Hide the "between totals" arrow option when totals don't exist (line charts). */
+function setArrowTotalsAllowed(allowed: boolean): void {
+  for (const selId of ["optDiffArrow", "optCagrArrow"]) {
+    const sel = byId(selId) as HTMLSelectElement;
+    const totalOpt = Array.from(sel.options).find((o) => o.value === "total");
+    if (totalOpt) totalOpt.hidden = !allowed;
+    if (!allowed && sel.value === "total") sel.value = "series";
+  }
 }
 
 // ---- grid bridge ---------------------------------------------------------

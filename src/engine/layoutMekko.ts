@@ -78,11 +78,9 @@ export function layoutMekko(model: ChartModel): Primitive[] {
         const h = yShare(cum) - yTop;
         cum += share;
         const meta: ShapeMeta = { objectType: "segment", seriesIndex: si, categoryIndex: ci };
-        prims.push({ kind: "rect", x, y: yTop, w: colW, h, fill: data.series[si].color, meta });
+        prims.push({ kind: "rect", x, y: yTop, w: colW, h, fill: data.series[si].color, stroke: "#FFFFFF", meta });
         if (opt.showValueLabels && h >= MIN_SEG && colW >= 16) {
-          // Mekko defaults to % (its point) but honors an explicit value/combo mode.
-          const mode = opt.labelMode === "value" ? "percent" : opt.labelMode;
-          const text = segmentLabel(val, total, mode, nf);
+          const text = segmentLabel(val, total, opt.labelMode, nf);
           const w = estTextW(text, opt.segmentFontSize);
           prims.push({ kind: "text", x: x + colW / 2 - w / 2, y: yTop + h / 2 - 7, w, h: 14, text, color: LABEL_LIGHT, size: opt.segmentFontSize, bold: false, align: "center", family: fam, meta: { objectType: "segmentLabel", seriesIndex: si, categoryIndex: ci } });
         }

@@ -375,9 +375,10 @@ describe("layoutBarColumn — difference & CAGR arrows", () => {
     const prims = layoutBarColumn(model({ cagrArrow: "total", cagrFrom: 0, cagrTo: 1, cagrPeriods: 1 }));
     const arrow = prims.find((s) => s.kind === "arrow" && s.meta?.objectType === "cagrArrow");
     expect(arrow && arrow.kind === "arrow" && arrow.y2 < arrow.y1).toBe(true); // "to" end higher on screen
-    expect(prims.some((s) => s.kind === "rect" && s.rounded && s.meta?.objectType === "cagrArrow")).toBe(true);
     const label = prims.find((s): s is TextPrimitive => s.kind === "text" && s.meta?.objectType === "cagrArrow");
     expect(label?.text).toBe("+50%");
+    expect(label?.bgShape).toBe("ellipse"); // one oval shape holds the % text
+
   });
 
   it("difference arrow position follows diffPos (slot boundary)", () => {

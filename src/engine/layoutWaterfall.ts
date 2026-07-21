@@ -82,7 +82,7 @@ export function layoutWaterfall(model: ChartModel): Primitive[] {
   function drawSeg(x: number, a: number, b: number, fill: string, text: string, si: number, ci: number) {
     const yTop = yFor(Math.max(a, b));
     const h = Math.max(0, yFor(Math.min(a, b)) - yTop);
-    prims.push({ kind: "rect", x, y: yTop, w: barW, h, fill, meta: { objectType: "segment", seriesIndex: si, categoryIndex: ci } });
+    prims.push({ kind: "rect", x, y: yTop, w: barW, h, fill, stroke: "#FFFFFF", meta: { objectType: "segment", seriesIndex: si, categoryIndex: ci } });
     if (opt.showValueLabels && text) {
       const cx = x + barW / 2;
       const lw = estTextW(text, opt.segmentFontSize);

@@ -8,6 +8,7 @@ const GRID_COLOR = "#D7E2F4";
 const CONNECTOR_COLOR = "#9AA6BF";
 const REF_COLOR = "#E8412C";
 const ARROW_COLOR = "#001C54"; // difference / CAGR arrows
+const SEG_BORDER = "#FFFFFF"; // thin separator between segments/bars
 const LABEL_LIGHT = "#FFFFFF";
 const LABEL_DARK = "#001C54";
 
@@ -169,13 +170,13 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
       const x = plotLeft + catStart;
       const yTop = yv(hi);
       const h = Math.max(0, yv(lo) - yTop);
-      prims.push({ kind: "rect", x, y: yTop, w: thick, h, fill, meta });
+      prims.push({ kind: "rect", x, y: yTop, w: thick, h, fill, stroke: SEG_BORDER, meta });
       return { cx: x + thick / 2, cy: yTop + h / 2 };
     }
     const y = plotTop + catStart;
     const xL = xv(lo);
     const w = Math.max(0, xv(hi) - xL);
-    prims.push({ kind: "rect", x: xL, y, w, h: thick, fill, meta });
+    prims.push({ kind: "rect", x: xL, y, w, h: thick, fill, stroke: SEG_BORDER, meta });
     return { cx: xL + w / 2, cy: y + thick / 2 };
   }
 
@@ -553,15 +554,15 @@ export function layoutBarColumn(model: ChartModel): Primitive[] {
     if (kFrom < 0 || kTo < 0) return;
     const xF = plotLeft + kFrom * slot + slot / 2;
     const xT = plotLeft + kTo * slot + slot / 2;
-    const off = 24; // sit above each total (and its label)
+    const off = 30; // sit clear above each total (and its value label)
     const yF = yv(Math.max(0, vFrom)) - off;
     const yT = yv(Math.max(0, vTo)) - off;
     prims.push({ kind: "arrow", x1: xF, y1: yF, x2: xT, y2: yT, color: ARROW_COLOR, weight: 1.5, headSize: 8, meta: { objectType: "cagrArrow" } });
-    const bw = estTextW(label, 10) + 10;
+    // One oval shape carrying the % text, centred on the arrow midpoint.
+    const bw = estTextW(label, 10) + 16;
     const mx = (xF + xT) / 2;
     const my = (yF + yT) / 2;
-    prims.push({ kind: "rect", x: mx - bw / 2, y: my - 9, w: bw, h: 18, fill: "#FFFFFF", rounded: true, meta: { objectType: "cagrArrow" } });
-    prims.push({ kind: "text", x: mx - bw / 2, y: my - 8, w: bw, h: 16, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "center", family: fam, meta: { objectType: "cagrArrow" } });
+    prims.push({ kind: "text", x: mx - bw / 2, y: my - 11, w: bw, h: 22, text: label, color: ARROW_COLOR, size: 10, bold: true, align: "center", family: fam, bg: "#FFFFFF", bgShape: "ellipse", meta: { objectType: "cagrArrow" } });
   }
 
   // With no bar series (a line chart) there are no totals, so compare a series.

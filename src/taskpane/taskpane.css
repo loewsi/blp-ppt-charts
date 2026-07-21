@@ -113,6 +113,9 @@ button.wide { width: 100%; }
 .agenda { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 12px; padding: 6px; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 6px; resize: vertical; }
 .chk.mini input { margin: 0; }
 .xcell.xformula { font-style: italic; color: #2E75FF; }
+/* Seam marking where a row/column is hidden (Unhide all to restore). */
+.xcell.hide-left { border-left: 3px double #E8412C; }
+.xcell.hide-top { border-top: 3px double #E8412C; }
 
 .paste { margin-top: 10px; }
 .paste summary {

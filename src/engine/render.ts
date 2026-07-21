@@ -144,7 +144,13 @@ function makeShapes(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoin
       { left: p.x, top: p.y, width: p.w, height: p.h }
     );
     s.fill.setSolidColor(p.fill);
-    s.lineFormat.visible = false;
+    if (p.stroke) {
+      s.lineFormat.visible = true;
+      s.lineFormat.color = p.stroke;
+      s.lineFormat.weight = p.strokeWeight ?? 0.75;
+    } else {
+      s.lineFormat.visible = false;
+    }
     return [s];
   }
 
@@ -207,10 +213,20 @@ function makeShapes(shapes: PowerPoint.ShapeCollection, p: Primitive): PowerPoin
     return [s];
   }
 
-  // text
-  const s = shapes.addTextBox(p.text, { left: p.x, top: p.y, width: p.w, height: p.h });
-  if (p.bg) s.fill.setSolidColor(p.bg);
-  else s.fill.clear();
+  // text — either a plain text box, or a filled shape (ellipse/roundRect) holding
+  // the text as ONE shape (used for the CAGR bubble).
+  let s: PowerPoint.Shape;
+  if (p.bgShape) {
+    const gt =
+      p.bgShape === "ellipse" ? PowerPoint.GeometricShapeType.ellipse : PowerPoint.GeometricShapeType.roundRectangle;
+    s = shapes.addGeometricShape(gt, { left: p.x, top: p.y, width: p.w, height: p.h });
+    s.fill.setSolidColor(p.bg ?? "#FFFFFF");
+    s.textFrame.textRange.text = p.text;
+  } else {
+    s = shapes.addTextBox(p.text, { left: p.x, top: p.y, width: p.w, height: p.h });
+    if (p.bg) s.fill.setSolidColor(p.bg);
+    else s.fill.clear();
+  }
   s.lineFormat.visible = false;
   const tf = s.textFrame;
   tf.topMargin = 0;
